@@ -1,0 +1,7 @@
+.comment-manage-container {
+  padding: 24px;
+}
+
+.comment-manage-container .ant-table {
+  background-color: #fff;
+}

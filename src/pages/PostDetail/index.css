@@ -1,0 +1,54 @@
+.post-detail-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.post-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.post-meta {
+  flex: 1;
+}
+
+.post-author {
+  font-size: 18px;
+  font-weight: 500;
+  color: #1890ff;
+}
+
+.post-time {
+  font-size: 14px;
+  color: #999;
+}
+
+.post-title {
+  font-size: 32px;
+  margin-bottom: 16px;
+  color: #333;
+}
+
+.post-tags {
+  margin-bottom: 24px;
+}
+
+.post-content {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #333;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.post-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.comment-input {
+  margin-bottom: 24px;
+}
+

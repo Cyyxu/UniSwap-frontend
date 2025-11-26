@@ -1,0 +1,7 @@
+.notice-manage-container {
+  padding: 24px;
+}
+
+.notice-manage-container .ant-table {
+  background-color: #fff;
+}

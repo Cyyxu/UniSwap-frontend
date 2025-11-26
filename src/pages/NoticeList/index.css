@@ -1,0 +1,21 @@
+.notice-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.notice-time {
+  font-size: 14px;
+  font-weight: normal;
+  color: #999;
+}
+
+.notice-content {
+  color: #666;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+

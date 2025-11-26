@@ -1,0 +1,7 @@
+.score-manage-container {
+  padding: 24px;
+}
+
+.score-manage-container .ant-table {
+  background-color: #fff;
+}

@@ -1,0 +1,20 @@
+.admin-user-manage {
+  background: #fff;
+  padding: 24px;
+  border-radius: 8px;
+  min-height: calc(100vh - 112px);
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+

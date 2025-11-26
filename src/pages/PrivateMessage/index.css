@@ -1,0 +1,38 @@
+.message-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.message-input-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.message-time {
+  font-size: 12px;
+  color: #999;
+}
+
+.message-content {
+  color: #333;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 8px 12px;
+  background: #fff;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+.message-content.unread {
+  background: #e6f7ff;
+  border-left: 3px solid #1890ff;
+}
+

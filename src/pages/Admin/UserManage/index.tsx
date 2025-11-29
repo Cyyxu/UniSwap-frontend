@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Table, Button, Input, Space, Tag, Popconfirm, message, Card } from 'antd'
-import { SearchOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { userApi } from '../../../api/user'
 import './index.css'
@@ -41,9 +41,9 @@ const UserManage = () => {
     }
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (_id: number) => {
     try {
-      // await userApi.delete(id)
+      // await userApi.delete(_id)
       message.success('删除成功')
       loadData()
     } catch (error) {
@@ -116,12 +116,11 @@ const UserManage = () => {
         <div className="page-header">
           <h1>用户管理</h1>
           <Space>
-            <Input
+            <Input.Search
               placeholder="搜索用户昵称"
-              prefix={<SearchOutlined />}
-              value={query.userName}
-              onChange={(e) => setQuery({ ...query, userName: e.target.value, current: 1 })}
-              style={{ width: 200 }}
+              allowClear
+              onSearch={(value) => setQuery({ ...query, userName: value, current: 1 })}
+              style={{ width: 300 }}
             />
           </Space>
         </div>

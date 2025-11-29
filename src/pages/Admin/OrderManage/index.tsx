@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Table, Button, Input, Space, Tag, message, Card } from 'antd'
-import { SearchOutlined } from '@ant-design/icons'
+import { Table, Input, Space, Tag, Card } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { orderApi } from '../../../api/order'
 import './index.css'
@@ -85,12 +84,11 @@ const OrderManage = () => {
         <div className="page-header">
           <h1>订单管理</h1>
           <Space>
-            <Input
+            <Input.Search
               placeholder="搜索订单号"
-              prefix={<SearchOutlined />}
-              value={query.searchText}
-              onChange={(e) => setQuery({ ...query, searchText: e.target.value, current: 1 })}
-              style={{ width: 200 }}
+              allowClear
+              onSearch={(value) => setQuery({ ...query, searchText: value, current: 1 })}
+              style={{ width: 300 }}
             />
           </Space>
         </div>

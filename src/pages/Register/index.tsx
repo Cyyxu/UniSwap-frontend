@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Form, Input, Button, Card, message } from 'antd'
-import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons'
+import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useNavigate, Link } from 'react-router-dom'
 import { userApi } from '../../api/user'
 import './index.css'
@@ -45,21 +45,21 @@ const Register = () => {
           size="large"
         >
           <Form.Item
+            name="userName"
+          >
+          <Input
+              prefix={<UserOutlined />}
+              placeholder="昵称（可选）"
+          />
+          </Form.Item>
+          <Form.Item
             name="userAccount"
             rules={[{ required: true, message: '请输入账号!' }]}
           >
-            <Input
+          <Input
               prefix={<UserOutlined />}
               placeholder="账号"
-            />
-          </Form.Item>
-          <Form.Item
-            name="userName"
-          >
-            <Input
-              prefix={<UserOutlined />}
-              placeholder="昵称（可选）"
-            />
+          />
           </Form.Item>
           <Form.Item
             name="userPassword"

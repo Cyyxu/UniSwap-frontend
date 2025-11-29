@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Card, Table, Tag, Space, Pagination } from 'antd'
+import { Card, Table, Tag, Pagination } from 'antd'
 import { orderApi, Order, OrderQuery } from '../../api/order'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
@@ -21,9 +21,9 @@ const OrderList = () => {
     setLoading(true)
     try {
       const res = await orderApi.getMyOrders(query)
-      setOrders(res?.records || [])
+      setOrders(res?.data?.records || [])
       // 确保 total 是数字类型
-      setTotal(Number(res?.total) || 0)
+      setTotal(Number(res?.data?.total) || 0)
     } catch (error) {
       console.error('加载订单失败', error)
     } finally {
@@ -36,27 +36,36 @@ const OrderList = () => {
       title: '订单号',
       dataIndex: 'id',
       key: 'id',
+      width: 180,
+      ellipsis: true,
     },
     {
-      title: '商品',
+      title: '商品名称',
       dataIndex: 'commodityName',
       key: 'commodityName',
+      width: 200,
+      ellipsis: true,
     },
     {
       title: '数量',
       dataIndex: 'buyNumber',
       key: 'buyNumber',
+      width: 80,
+      align: 'center',
     },
     {
       title: '总金额',
       dataIndex: 'paymentAmount',
       key: 'paymentAmount',
+      width: 120,
       render: (amount) => amount != null ? `¥${amount}` : '¥0',
     },
     {
       title: '支付状态',
       dataIndex: 'payStatus',
       key: 'payStatus',
+      width: 100,
+      align: 'center',
       render: (status) => {
         const statusMap: Record<number, { text: string; color: string }> = {
           0: { text: '未支付', color: 'orange' },
@@ -67,10 +76,15 @@ const OrderList = () => {
       },
     },
     {
-      title: '创建时间',
-      dataIndex: 'createTime',
-      key: 'createTime',
-      render: (time) => dayjs(time).format('YYYY-MM-DD HH:mm:ss'),
+      title: '订单状态',
+      dataIndex: 'orderStatus',
+      key: 'orderStatus',
+      width: 100,
+      align: 'center',
+      render: (status) => {
+        const statusText = status === 'Yundefined' ? '未定义' : status
+        return <Tag>{statusText}</Tag>
+      },
     },
   ]
 

@@ -148,91 +148,134 @@ const AIChat = () => {
     }
   }
 
+  // 获取历史会话列表（按日期分组）
+  const getHistorySessions = () => {
+    const sessions: { [key: string]: AIMessage[] } = {}
+    messages.forEach((msg) => {
+      const date = dayjs(msg.createTime).format('YYYY-MM-DD')
+      if (!sessions[date]) {
+        sessions[date] = []
+      }
+      sessions[date].push(msg)
+    })
+    return sessions
+  }
+
   return (
     <div className="ai-chat-container">
-      <Card 
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Button 
-              type="text" 
-              icon={<ArrowLeftOutlined />} 
-              onClick={() => navigate(-1)}
-              style={{ padding: '4px 8px' }}
-            />
-            <span>AI 智能助手</span>
-          </div>
-        }
-        className="chat-card"
-      >
-        <div className="chat-messages">
-          {messages.length === 0 ? (
-            <div className="empty-chat">
-              <RobotOutlined style={{ fontSize: 64, color: '#1890ff', marginBottom: 16 }} />
-              <p>开始与 AI 助手对话吧！</p>
-            </div>
-          ) : (
-            <List
-              dataSource={messages}
-              renderItem={(item) => {
-                // 判断是用户消息还是AI消息
-                const isUserMessage = item.userInputText && !item.aiGenerateText
-                
-                return (
-                  <div className={`message-item ${isUserMessage ? 'user-message' : 'ai-message'}`}>
-                    <Avatar
-                      icon={isUserMessage ? <UserOutlined /> : <RobotOutlined />}
-                      style={{
-                        backgroundColor: isUserMessage ? '#52c41a' : '#1890ff',
-                      }}
-                    />
-                    <div className="message-content">
-                      <div className="message-text">
-                        {isUserMessage ? (
-                          <div className="user-text">{item.userInputText}</div>
-                        ) : item.aiGenerateText ? (
-                          <div className="ai-text">{item.aiGenerateText}</div>
-                        ) : (
-                          <div className="ai-text" style={{ color: '#999', fontStyle: 'italic' }}>
-                            <Spin size="small" /> AI正在思考中...
-                          </div>
-                        )}
-                      </div>
-                      <div className="message-time">
-                        {dayjs(item.createTime).format('HH:mm:ss')}
+      <div className="chat-layout">
+        {/* 左侧历史记录 */}
+        <div className="chat-history">
+          <Card 
+            title="历史会话" 
+            className="history-card"
+            bodyStyle={{ padding: 0 }}
+          >
+            <div className="history-list">
+              {Object.entries(getHistorySessions()).map(([date, msgs]) => (
+                <div key={date} className="history-group">
+                  <div className="history-date">{date}</div>
+                  {msgs.filter(m => m.userInputText).map((msg) => (
+                    <div key={msg.id} className="history-item">
+                      <div className="history-text">{msg.userInputText}</div>
+                      <div className="history-time">
+                        {dayjs(msg.createTime).format('HH:mm')}
                       </div>
                     </div>
-                  </div>
-                )
-              }}
-            />
-          )}
-          <div ref={messagesEndRef} />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </Card>
         </div>
-        <div className="chat-input">
-          <TextArea
-            rows={3}
-            placeholder="输入您的问题..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onPressEnter={(e) => {
-              if (e.shiftKey) return
-              e.preventDefault()
-              handleSend()
-            }}
-            disabled={loading}
-          />
-          <Button
-            type="primary"
-            icon={<SendOutlined />}
-            onClick={handleSend}
-            loading={loading}
-            style={{ marginTop: 12 }}
-            block
+
+        {/* 右侧聊天区域 */}
+        <div className="chat-main">
+          <Card 
+            title={
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Button 
+                  type="text" 
+                  icon={<ArrowLeftOutlined />} 
+                  onClick={() => navigate(-1)}
+                  style={{ padding: '4px 8px' }}
+                />
+                <span>AI 智能助手</span>
+              </div>
+            }
+            className="chat-card"
           >
-            发送
-          </Button>
+            <div className="chat-messages">
+              {messages.length === 0 ? (
+                <div className="empty-chat">
+                  <RobotOutlined style={{ fontSize: 64, color: '#1890ff', marginBottom: 16 }} />
+                  <p>开始与 AI 助手对话吧！</p>
+                </div>
+              ) : (
+                <List
+                  dataSource={messages}
+                  renderItem={(item) => {
+                    // 判断是用户消息还是AI消息
+                    const isUserMessage = item.userInputText && !item.aiGenerateText
+                    
+                    return (
+                      <div className={`message-item ${isUserMessage ? 'user-message' : 'ai-message'}`}>
+                        <Avatar
+                          icon={isUserMessage ? <UserOutlined /> : <RobotOutlined />}
+                          style={{
+                            backgroundColor: isUserMessage ? '#52c41a' : '#1890ff',
+                          }}
+                        />
+                        <div className="message-content">
+                          <div className="message-text">
+                            {isUserMessage ? (
+                              <div className="user-text">{item.userInputText}</div>
+                            ) : item.aiGenerateText ? (
+                              <div className="ai-text">{item.aiGenerateText}</div>
+                            ) : (
+                              <div className="ai-text" style={{ color: '#999', fontStyle: 'italic' }}>
+                                <Spin size="small" /> AI正在思考中...
+                              </div>
+                            )}
+                          </div>
+                          <div className="message-time">
+                            {dayjs(item.createTime).format('HH:mm:ss')}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  }}
+                />
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+            <div className="chat-input">
+              <TextArea
+                rows={3}
+                placeholder="输入您的问题..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onPressEnter={(e) => {
+                  if (e.shiftKey) return
+                  e.preventDefault()
+                  handleSend()
+                }}
+                disabled={loading}
+              />
+              <Button
+                type="primary"
+                icon={<SendOutlined />}
+                onClick={handleSend}
+                loading={loading}
+                style={{ marginTop: 12 }}
+                block
+              >
+                发送
+              </Button>
+            </div>
+          </Card>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

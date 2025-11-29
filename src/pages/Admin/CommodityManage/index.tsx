@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Table, Button, Input, Space, Tag, Popconfirm, message, Card, Modal, Form, InputNumber, Select } from 'antd'
-import { SearchOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { commodityApi, CommodityEditRequest } from '../../../api/commodity'
 import { commodityTypeApi } from '../../../api/commodityType'
@@ -191,12 +191,11 @@ const CommodityManage = () => {
         <div className="page-header">
           <h1>商品管理</h1>
           <Space>
-            <Input
+            <Input.Search
               placeholder="搜索商品名称"
-              prefix={<SearchOutlined />}
-              value={query.searchText}
-              onChange={(e) => setQuery({ ...query, searchText: e.target.value, current: 1 })}
-              style={{ width: 200 }}
+              allowClear
+              onSearch={(value) => setQuery({ ...query, searchText: value, current: 1 })}
+              style={{ width: 300 }}
             />
           </Space>
         </div>

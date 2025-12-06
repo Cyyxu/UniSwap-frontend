@@ -11,6 +11,6 @@ export const systemApi = {
    * @returns 字典列表
    */
   getDictByType: (type: DictTypeEnum): Promise<SystemDict[]> => {
-    return api.get(`/system?type=${type}`)
+    return api.post('/api/system/dict', { type })
   },
 }

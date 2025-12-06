@@ -23,15 +23,15 @@ export interface MessageAddRequest {
 }
 
 export const messageApi = {
-  getMyList: (params: MessageQuery) => api.post('/privateMessage/my/list/page/vo', params),
-  add: (data: MessageAddRequest) => api.post<number>('/privateMessage/add', data),
-  delete: (id: number) => api.post<boolean>('/privateMessage/delete', { id }),
-  getConversations: () => api.get('/privateMessage/conversation'),
-  getChatHistory: (otherUserId: number) => api.get(`/privateMessage/chat/${otherUserId}`),
-  markAsRead: (otherUserId: number) => api.post<boolean>(`/privateMessage/markAsRead/${otherUserId}`),
-  deleteConversation: (otherUserId: number) => api.post<boolean>(`/privateMessage/delete/${otherUserId}`),
-  checkUserOnline: (userId: number) => api.get(`/chat/online/${userId}`),
-  getOnlineUsers: () => api.get<number[]>('/chat/online/list'),
-  getOnlineCount: () => api.get<{ count: number }>('/chat/online/count'),
+  getMyList: (params: MessageQuery) => api.post('/api/message/mine', params),
+  add: (data: MessageAddRequest) => api.post<number>('/api/message/send', data),
+  delete: (id: number) => api.post<boolean>('/api/message/remove', { id }),
+  getConversations: () => api.post('/api/message/conversation'),
+  getChatHistory: (otherUserId: number) => api.post('/api/message/history', { otherUserId }),
+  markAsRead: (otherUserId: number) => api.post<boolean>('/api/message/read', { otherUserId }),
+  deleteConversation: (otherUserId: number) => api.post<boolean>('/api/message/clear', { otherUserId }),
+  checkUserOnline: (userId: number) => api.post('/api/chat/status', { userId }),
+  getOnlineUsers: () => api.post<number[]>('/api/chat/online'),
+  getOnlineCount: () => api.post<{ count: number }>('/api/chat/count'),
 }
 

@@ -14,10 +14,10 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      '/api': {
+      '/uniswap': {
         target: 'http://localhost:8109',
         changeOrigin: true,
-        // 后端 context-path 已经是 /api，所以不需要重写路径
+        // 后端 context-path 已经是 /uniswap，所以不需要重写路径
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
             console.error('代理错误:', err.message)

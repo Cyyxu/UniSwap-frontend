@@ -10,10 +10,10 @@ const getBaseURL = () => {
   }
   // 生产环境使用后端服务器地址
   if (import.meta.env.PROD) {
-    return 'http://120.26.104.183:8109/api'
+    return 'http://120.26.104.183:8109/uniswap'
   }
   // 开发环境使用代理
-  return '/api'
+  return '/uniswap'
 }
 
 const api = axios.create({

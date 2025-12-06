@@ -36,13 +36,13 @@ const CommentManage: React.FC = () => {
   const loadComments = async (page: number = 1, postId?: number) => {
     setLoading(true)
     try {
-      const res = await api.post('/comment/list/page/vo', {
+      const res = await api.post('/api/comment/page', {
         current: page,
         pageSize,
         postId,
       })
-      setComments(res.data.records || [])
-      setTotal(res.data.total || 0)
+      setComments(res.records || [])
+      setTotal(res.total || 0)
       setCurrent(page)
     } catch (error: any) {
       message.error(error.message || '加载评论列表失败')
@@ -65,7 +65,7 @@ const CommentManage: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      await api.post('/comment/delete', { id })
+      await api.post('/api/comment/remove', { id })
       message.success('删除成功')
       loadComments(current, searchPostId)
     } catch (error: any) {
@@ -78,7 +78,7 @@ const CommentManage: React.FC = () => {
       const values = await form.validateFields()
       
       if (editingComment) {
-        await api.post('/comment/update', {
+        await api.post('/api/comment/manage', {
           id: editingComment.id,
           ...values,
         })

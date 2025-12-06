@@ -48,14 +48,14 @@ export interface PostEditRequest {
 }
 
 export const postApi = {
-  getList: (params: PostQuery) => api.post('/post/list/page/vo', params),
-  search: (params: PostQuery) => api.post('/post/search/page/vo', params),
-  getDetail: (id: number) => api.get(`/post/get/vo?id=${id}`),
-  add: (data: PostAddRequest) => api.post<number>('/post/add', data),
-  // 后台管理使用update接口（管理员权限）
-  edit: (data: PostEditRequest) => api.post<boolean>('/post/update', data),
-  delete: (id: number) => api.post<boolean>('/post/delete', { id }),
-  thumb: (postId: number) => api.post<number>('/post_thumb/', { postId }),
-  favour: (postId: number) => api.post<number>('/post_favour/', { postId }),
+  getList: (params: PostQuery) => api.post('/api/post/page', params),
+  search: (params: PostQuery) => api.post('/api/post/search', params),
+  getDetail: (id: number) => api.post('/api/post/detail', { id }),
+  add: (data: PostAddRequest) => api.post<number>('/api/post/create', data),
+  // 后台管理使用manage接口（管理员权限）
+  edit: (data: PostEditRequest) => api.post<boolean>('/api/post/manage', data),
+  delete: (id: number) => api.post<boolean>('/api/post/remove', { id }),
+  thumb: (postId: number) => api.post<number>('/api/thumb/toggle', { postId }),
+  favour: (postId: number) => api.post<number>('/api/favour/toggle', { postId }),
 }
 

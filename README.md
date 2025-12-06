@@ -127,12 +127,12 @@ UniSwap-frontend/
 
 开发环境 `.env.development`:
 ```
-VITE_API_BASE_URL=http://localhost:8080/api
+VITE_API_BASE_URL=/uniswap
 ```
 
 生产环境 `.env.production`:
 ```
-VITE_API_BASE_URL=/api
+VITE_API_BASE_URL=/uniswap
 ```
 
 ## 📝 后端项目

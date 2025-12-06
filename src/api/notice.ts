@@ -16,7 +16,7 @@ export interface NoticeQuery {
 }
 
 export const noticeApi = {
-  getList: (params: NoticeQuery) => api.post('/notice/list/page/vo', params),
-  getDetail: (id: number) => api.get(`/notice/get/vo?id=${id}`),
+  getList: (params: NoticeQuery) => api.post('/api/notice/page', params),
+  getDetail: (id: number) => api.post('/api/notice/detail', { id }),
 }
 

@@ -23,8 +23,8 @@ export interface TrendData {
 
 export const statisticsApi = {
   // 获取总体统计数据
-  getOverall: () => api.get<Statistics>('/statistic/overall'),
+  getOverall: () => api.post<Statistics>('/api/stats/overall'),
   
   // 获取趋势数据
-  getTrend: (days: number = 7) => api.get<TrendData[]>(`/statistic/trend?days=${days}`),
+  getTrend: (days: number = 7) => api.post<TrendData[]>('/api/stats/trend', { days }),
 }

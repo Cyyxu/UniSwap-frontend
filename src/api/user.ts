@@ -56,17 +56,17 @@ export interface UpdatePasswordRequest {
 }
 
 export const userApi = {
-  login: (data: LoginRequest) => api.post<LoginResponse>('/user/login', data),
-  register: (data: RegisterRequest) => api.post<number>('/user/register', data),
-  logout: () => api.post<boolean>('/user/logout'),
-  getCurrentUser: () => api.get('/user/get/login'),
-  getList: (params: UserQuery) => api.post('/user/list/page/vo', params),
-  delete: (id: number) => api.post<boolean>('/user/delete', { id }),
+  login: (data: LoginRequest) => api.post<LoginResponse>('/api/user/login', data),
+  register: (data: RegisterRequest) => api.post<number>('/api/user/register', data),
+  logout: () => api.post<boolean>('/api/user/logout'),
+  getCurrentUser: () => api.post('/api/user/current'),
+  getList: (params: UserQuery) => api.post('/api/user/page', params),
+  delete: (id: number) => api.post<boolean>('/api/user/remove', { id }),
   
   // 用户更新自己的信息
-  updateMyUser: (data: UpdateMyUserRequest) => api.post<boolean>('/user/update/my', data),
+  updateMyUser: (data: UpdateMyUserRequest) => api.post<boolean>('/api/user/profile', data),
   
   // 修改密码
-  updatePassword: (data: UpdatePasswordRequest) => api.post<boolean>('/user/update/password', data),
+  updatePassword: (data: UpdatePasswordRequest) => api.post<boolean>('/api/user/password', data),
 }
 

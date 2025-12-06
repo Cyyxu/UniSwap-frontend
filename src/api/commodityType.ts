@@ -7,7 +7,7 @@ export interface CommodityType {
 }
 
 export const commodityTypeApi = {
-  getList: () => api.post<{ records: CommodityType[] }>('/commodityType/list/page/vo', {
+  getList: () => api.post<{ records: CommodityType[] }>('/api/category/page', {
     current: 1,
     pageSize: 1000,
   }).then(res => res?.records || []),

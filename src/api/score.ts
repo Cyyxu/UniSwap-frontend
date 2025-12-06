@@ -32,25 +32,29 @@ export interface CommodityScoreQueryRequest {
 export const scoreApi = {
   // 添加评分
   add: (data: CommodityScoreAddRequest) => 
-    request.post<number>('/commodityScore/add', data),
+    request.post<number>('/api/score/create', data),
   
   // 编辑评分
   edit: (data: CommodityScoreEditRequest) => 
-    request.post<boolean>('/commodityScore/edit', data),
+    request.post<boolean>('/api/score/edit', data),
   
   // 删除评分
   delete: (id: number) => 
-    request.post<boolean>('/commodityScore/delete', { id }),
+    request.post<boolean>('/api/score/remove', { id }),
+  
+  // 管理员更新评分
+  manage: (data: CommodityScoreEditRequest) => 
+    request.post<boolean>('/api/score/manage', data),
   
   // 获取我的评分列表
   getMyList: (params: CommodityScoreQueryRequest) => 
-    request.post('/commodityScore/my/list/page/vo', params),
+    request.post('/api/score/mine', params),
   
   // 获取商品评分列表
   getList: (params: CommodityScoreQueryRequest) => 
-    request.post('/commodityScore/list/page/vo', params),
+    request.post('/api/score/page', params),
   
   // 获取商品平均评分
   getAverage: (commodityId: number) => 
-    request.get<number>(`/commodityScore/average?commodityId=${commodityId}`),
+    request.post<number>('/api/score/average', { commodityId }),
 }

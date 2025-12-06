@@ -19,8 +19,23 @@ export interface OrderQuery {
 }
 
 export const orderApi = {
-  getMyOrders: (params: OrderQuery) => api.post('/commodityOrder/my/list/page/vo', params),
-  getList: (params: OrderQuery) => api.post('/commodityOrder/list/page/vo', params),
-  getDetail: (id: number) => api.get(`/commodityOrder/get/vo?id=${id}`),
+  // 分页获取当前用户的订单列表
+  getMyOrders: (params: OrderQuery) => api.post('/api/order/mine', params),
+  // 分页获取订单列表
+  getList: (params: OrderQuery) => api.post('/api/order/page', params),
+  // 获取订单详情
+  getDetail: (id: number) => api.post('/api/order/detail', { id }),
+  // 创建订单
+  create: (data: any) => api.post<number>('/api/order/create', data),
+  // 删除订单
+  delete: (id: number) => api.post('/api/order/remove', { id }),
+  // 编辑订单
+  edit: (data: any) => api.post('/api/order/edit', data),
+  // 管理员获取订单列表
+  adminList: (params: OrderQuery) => api.post('/api/order/admin', params),
+  // 管理员更新订单
+  manage: (data: any) => api.post('/api/order/manage', data),
+  // 获取订单热力图数据
+  getHeatmap: (params: { userId?: number; payStatus?: number }) => api.post('/api/order/heatmap', params),
 }
 

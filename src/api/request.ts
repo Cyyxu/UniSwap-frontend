@@ -2,18 +2,34 @@ import axios from 'axios'
 import { message } from 'antd'
 import { useAuthStore } from '../store/authStore'
 
+// 根据环境变量设置 baseURL
+const getBaseURL = () => {
+  // 优先使用环境变量配置
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL
+  }
+  // 生产环境使用后端服务器地址
+  if (import.meta.env.PROD) {
+    return 'http://120.26.104.183:8109/api'
+  }
+  // 开发环境使用代理
+  return '/api'
+}
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: getBaseURL(),
   timeout: 30000,
   withCredentials: true,
 })
+
+const formatAuthToken = (token: string) => (token.startsWith('Bearer ') ? token : `Bearer ${token}`)
 
 // 请求拦截器
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+      config.headers.Authorization = formatAuthToken(token)
     }
     
     // 强制设置 Content-Type，确保不包含 charset
@@ -92,4 +108,3 @@ api.interceptors.response.use(
 )
 
 export default api
-

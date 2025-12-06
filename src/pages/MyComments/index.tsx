@@ -3,6 +3,7 @@ import { Card, List, message, Empty, Spin, Button, Modal, Input, Tag } from 'ant
 import { CommentOutlined, EditOutlined, DeleteOutlined, FileTextOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/request'
+import { formatDateTime } from '../../utils/format'
 import './index.css'
 
 const { TextArea } = Input
@@ -143,10 +144,10 @@ const MyComments: React.FC = () => {
                     }
                     description={
                       <span style={{ color: '#999', fontSize: '12px' }}>
-                        {new Date(comment.createTime).toLocaleString()}
+                        {formatDateTime(comment.createTime)}
                         {comment.updateTime && comment.updateTime !== comment.createTime && (
                           <span style={{ marginLeft: 8 }}>
-                            (已编辑于 {new Date(comment.updateTime).toLocaleString()})
+                            (已编辑于 {formatDateTime(comment.updateTime)})
                           </span>
                         )}
                       </span>

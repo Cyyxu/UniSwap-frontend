@@ -5,6 +5,7 @@ export interface CommodityScore {
   commodityId: number
   userId: number
   score: number
+  comment?: string
   createTime: string
   updateTime: string
 }
@@ -12,11 +13,13 @@ export interface CommodityScore {
 export interface CommodityScoreAddRequest {
   commodityId: number
   score: number
+  comment?: string
 }
 
 export interface CommodityScoreEditRequest {
   id: number
   score: number
+  comment?: string
 }
 
 export interface CommodityScoreQueryRequest {

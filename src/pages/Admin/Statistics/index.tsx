@@ -20,6 +20,9 @@ const Statistics = () => {
     todayUsers: 0,
     todayOrders: 0,
     todayPosts: 0,
+    userGrowthRate: 0,
+    orderGrowthRate: 0,
+    postGrowthRate: 0,
   })
   const [loading, setLoading] = useState(false)
   const [trendData, setTrendData] = useState<TrendData[]>([])
@@ -39,7 +42,7 @@ const Statistics = () => {
         statisticsApi.getTrend(30),
       ])
 
-      // 设置统计数据
+      // 设置统计数据（包含后端计算的增长率）
       setStats({
         totalUsers: statsData.totalUsers || 0,
         totalCommodities: statsData.totalCommodities || 0,
@@ -48,6 +51,9 @@ const Statistics = () => {
         todayUsers: statsData.todayUsers || 0,
         todayOrders: statsData.todayOrders || 0,
         todayPosts: statsData.todayPosts || 0,
+        userGrowthRate: statsData.userGrowthRate || 0,
+        orderGrowthRate: statsData.orderGrowthRate || 0,
+        postGrowthRate: statsData.postGrowthRate || 0,
       })
 
       setTrendData(weekTrend || [])
@@ -59,19 +65,10 @@ const Statistics = () => {
     }
   }
 
-  // 计算增长率
-  const calculateGrowth = (current: number, previous: number) => {
-    if (previous === 0) return current > 0 ? 100 : 0
-    return Math.round(((current - previous) / previous) * 100)
-  }
-
-  // 获取昨日数据
-  const yesterdayData = trendData.length >= 2 ? trendData[trendData.length - 2] : { users: 0, orders: 0, posts: 0 }
-  const todayData = trendData.length >= 1 ? trendData[trendData.length - 1] : { users: 0, orders: 0, posts: 0 }
-
-  const userGrowth = calculateGrowth(todayData.users, yesterdayData.users)
-  const orderGrowth = calculateGrowth(todayData.orders, yesterdayData.orders)
-  const postGrowth = calculateGrowth(todayData.posts, yesterdayData.posts)
+  // 使用后端返回的增长率
+  const userGrowth = stats.userGrowthRate
+  const orderGrowth = stats.orderGrowthRate
+  const postGrowth = stats.postGrowthRate
 
   // 表格数据
   const tableData = trendData.map((item, index) => ({

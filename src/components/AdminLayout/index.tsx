@@ -16,6 +16,7 @@ import {
 } from '@ant-design/icons'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
+import { userApi } from '../../api/user'
 import './index.css'
 
 const { Header, Sider, Content } = Layout
@@ -65,11 +66,13 @@ const AdminLayout = () => {
 
   const handleLogout = async () => {
     try {
+      await userApi.logout()
+    } catch (error) {
+      // 即使API调用失败也继续清除本地状态
+    } finally {
       logout()
       message.success('退出登录成功')
       navigate('/login')
-    } catch (error) {
-      message.error('退出登录失败')
     }
   }
 

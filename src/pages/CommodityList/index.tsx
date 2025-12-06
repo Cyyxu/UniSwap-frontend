@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Card, Row, Col, Input, Select, Button, Pagination, Empty, Tag } from 'antd'
 import { SearchOutlined, ShoppingCartOutlined } from '@ant-design/icons'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { commodityApi, Commodity, CommodityQuery } from '../../api/commodity'
 import './index.css'
 
@@ -10,6 +10,7 @@ const { Option } = Select
 
 const CommodityList = () => {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [loading, setLoading] = useState(false)
   const [commodities, setCommodities] = useState<Commodity[]>([])
   const [total, setTotal] = useState(0)
@@ -17,11 +18,53 @@ const CommodityList = () => {
     current: 1,
     pageSize: 12,
     isListed: 1,
+    commodityName: searchParams.get('search') || undefined,
+    commodityTypeId: searchParams.get('typeId') ? Number(searchParams.get('typeId')) : undefined,
+    sortField: searchParams.get('sortField') || undefined,
+    sortOrder: searchParams.get('sortOrder') || undefined,
   })
+
+  const syncFiltersToUrl = (state: CommodityQuery) => {
+    const params = new URLSearchParams()
+    if (state.commodityName) params.set('search', state.commodityName)
+    if (state.commodityTypeId) params.set('typeId', String(state.commodityTypeId))
+    if (state.sortField && state.sortOrder) {
+      params.set('sortField', state.sortField)
+      params.set('sortOrder', state.sortOrder)
+    }
+    setSearchParams(params)
+  }
 
   useEffect(() => {
     loadData()
   }, [query])
+
+  useEffect(() => {
+    const typeId = searchParams.get('typeId')
+    const commodityName = searchParams.get('search')
+    const sortField = searchParams.get('sortField')
+    const sortOrder = searchParams.get('sortOrder')
+
+    setQuery((prev) => {
+      const next: CommodityQuery = {
+        ...prev,
+        current: 1,
+        isListed: 1,
+        commodityTypeId: typeId ? Number(typeId) : undefined,
+        commodityName: commodityName || undefined,
+        sortField: sortField || undefined,
+        sortOrder: sortOrder || undefined,
+      }
+
+      const unchanged =
+        prev.commodityTypeId === next.commodityTypeId &&
+        prev.commodityName === next.commodityName &&
+        prev.sortField === next.sortField &&
+        prev.sortOrder === next.sortOrder
+
+      return unchanged ? prev : next
+    })
+  }, [searchParams])
 
   const loadData = async () => {
     setLoading(true)
@@ -37,7 +80,14 @@ const CommodityList = () => {
   }
 
   const handleSearch = (value: string) => {
-    setQuery({ ...query, commodityName: value, current: 1 })
+    const keyword = value.trim()
+    const merged: CommodityQuery = {
+      ...query,
+      commodityName: keyword || undefined,
+      current: 1,
+    }
+    setQuery(merged)
+    syncFiltersToUrl(merged)
   }
 
   return (
@@ -50,14 +100,23 @@ const CommodityList = () => {
             enterButton={<SearchOutlined />}
             size="large"
             onSearch={handleSearch}
+            defaultValue={query.commodityName}
             style={{ maxWidth: 500 }}
           />
           <Select
             placeholder="排序方式"
             style={{ width: 200 }}
+            value={query.sortField && query.sortOrder ? `${query.sortField}_${query.sortOrder}` : undefined}
             onChange={(value) => {
               const [field, order] = value.split('_')
-              setQuery({ ...query, sortField: field, sortOrder: order, current: 1 })
+              const merged: CommodityQuery = {
+                ...query,
+                sortField: field,
+                sortOrder: order,
+                current: 1,
+              }
+              setQuery(merged)
+              syncFiltersToUrl(merged)
             }}
           >
             <Option value="createTime_descend">最新发布</Option>
@@ -131,4 +190,3 @@ const CommodityList = () => {
 }
 
 export default CommodityList
-

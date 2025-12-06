@@ -18,6 +18,9 @@ const Dashboard = () => {
     todayUsers: 0,
     todayOrders: 0,
     todayPosts: 0,
+    userGrowthRate: 0,
+    orderGrowthRate: 0,
+    postGrowthRate: 0,
   })
   const [loading, setLoading] = useState(false)
   const [trendData, setTrendData] = useState<TrendData[]>([])
@@ -37,7 +40,7 @@ const Dashboard = () => {
         statisticsApi.getTrend(7),
       ])
 
-      // 设置统计数据
+      // 设置统计数据（包含后端计算的增长率）
       setStats({
         totalUsers: statsData.totalUsers || 0,
         totalCommodities: statsData.totalCommodities || 0,
@@ -46,6 +49,9 @@ const Dashboard = () => {
         todayUsers: statsData.todayUsers || 0,
         todayOrders: statsData.todayOrders || 0,
         todayPosts: statsData.todayPosts || 0,
+        userGrowthRate: statsData.userGrowthRate || 0,
+        orderGrowthRate: statsData.orderGrowthRate || 0,
+        postGrowthRate: statsData.postGrowthRate || 0,
       })
 
       // 设置趋势数据
@@ -112,9 +118,16 @@ const Dashboard = () => {
               title="用户总数"
               value={stats.totalUsers}
               prefix={<UserOutlined />}
-              suffix={<span style={{ fontSize: 14, color: '#52c41a' }}>今日+{stats.todayUsers}</span>}
+              suffix={
+                <span style={{ fontSize: 14, color: stats.userGrowthRate >= 0 ? '#52c41a' : '#f5222d' }}>
+                  {stats.userGrowthRate >= 0 ? '+' : ''}{stats.userGrowthRate}%
+                </span>
+              }
               valueStyle={{ color: '#3f8600' }}
             />
+            <div style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
+              今日新增：{stats.todayUsers}
+            </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
@@ -133,9 +146,16 @@ const Dashboard = () => {
               title="订单总数"
               value={stats.totalOrders}
               prefix={<ShoppingCartOutlined />}
-              suffix={<span style={{ fontSize: 14, color: '#52c41a' }}>今日+{stats.todayOrders}</span>}
+              suffix={
+                <span style={{ fontSize: 14, color: stats.orderGrowthRate >= 0 ? '#52c41a' : '#f5222d' }}>
+                  {stats.orderGrowthRate >= 0 ? '+' : ''}{stats.orderGrowthRate}%
+                </span>
+              }
               valueStyle={{ color: '#cf1322' }}
             />
+            <div style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
+              今日新增：{stats.todayOrders}
+            </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
@@ -144,9 +164,16 @@ const Dashboard = () => {
               title="帖子总数"
               value={stats.totalPosts}
               prefix={<FileTextOutlined />}
-              suffix={<span style={{ fontSize: 14, color: '#52c41a' }}>今日+{stats.todayPosts}</span>}
+              suffix={
+                <span style={{ fontSize: 14, color: stats.postGrowthRate >= 0 ? '#52c41a' : '#f5222d' }}>
+                  {stats.postGrowthRate >= 0 ? '+' : ''}{stats.postGrowthRate}%
+                </span>
+              }
               valueStyle={{ color: '#722ed1' }}
             />
+            <div style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
+              今日新增：{stats.todayPosts}
+            </div>
           </Card>
         </Col>
       </Row>

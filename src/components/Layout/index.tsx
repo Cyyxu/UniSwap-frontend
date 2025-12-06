@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Layout as AntLayout, Menu, Avatar, Dropdown, Badge, Button } from 'antd'
+import { Layout as AntLayout, Menu, Avatar, Dropdown, Button } from 'antd'
 import {
   HomeOutlined,
   ShoppingOutlined,
@@ -16,6 +16,8 @@ import {
 import { useAuthStore } from '../../store/authStore'
 import { useEffect } from 'react'
 import { userApi } from '../../api/user'
+import FloatingDock from '../FloatingDock'
+import './index.css'
 
 const { Header, Content, Footer } = AntLayout
 
@@ -26,7 +28,7 @@ const Layout = () => {
 
   useEffect(() => {
     if (token && !user) {
-      userApi.getCurrentUser().then((data) => {
+      userApi.getCurrentUser().then((data: any) => {
         setUser(data)
       })
     }
@@ -45,8 +47,8 @@ const Layout = () => {
     { key: 'ai-chat', icon: <RobotOutlined />, label: 'AI 助手' },
     { key: 'message', icon: <MessageOutlined />, label: '私信' },
     { key: 'settings', icon: <SettingOutlined />, label: '系统设置' },
-    ...(user?.userRole === 'admin' ? [{ type: 'divider' }, { key: 'admin', icon: <DashboardOutlined />, label: '后台管理' }] : []),
-    { type: 'divider' },
+    ...(user?.userRole === 'admin' ? [{ type: 'divider' as const }, { key: 'admin', icon: <DashboardOutlined />, label: '后台管理' }] : []),
+    { type: 'divider' as const },
     { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', danger: true },
   ]
 
@@ -63,30 +65,39 @@ const Layout = () => {
     }
   }
 
+  // 首页使用自己的导航栏
+  const isHomePage = location.pathname === '/'
+  // 登录/注册页不显示悬浮栏
+  const isAuthPage = ['/login', '/register'].includes(location.pathname)
+
   return (
     <AntLayout style={{ minHeight: '100vh' }}>
-      <Header style={{ 
-        background: '#fff', 
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 50px',
-        position: 'sticky',
-        top: 0,
-        zIndex: 1000,
-      }}>
+      {!isHomePage && (
+        <Header style={{ 
+          background: '#fff', 
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 50px',
+          position: 'sticky',
+          top: 0,
+          zIndex: 1000,
+        }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 40 }}>
           <div 
             style={{ 
-              fontSize: 24, 
+              fontSize: 22, 
               fontWeight: 'bold', 
-              color: '#1890ff',
+              color: '#FF6B00',
               cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
             }}
             onClick={() => navigate('/')}
           >
-            🎓 校园二手交易
+            🔄 UniSwap
           </div>
           <Menu
             mode="horizontal"
@@ -99,10 +110,18 @@ const Layout = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           {token ? (
             <>
-              <Button type="link" onClick={() => navigate('/commodity-manage')}>
+              <Button 
+                type="link" 
+                onClick={() => navigate('/commodity-manage')}
+                style={{ color: '#FF6B00' }}
+              >
                 发布商品
               </Button>
-              <Button type="link" onClick={() => navigate('/post/create')}>
+              <Button 
+                type="link" 
+                onClick={() => navigate('/post/create')}
+                style={{ color: '#FF6B00' }}
+              >
                 发布帖子
               </Button>
               <Dropdown
@@ -117,22 +136,31 @@ const Layout = () => {
             </>
           ) : (
             <>
-              <Button type="link" onClick={() => navigate('/login')}>
+              <Button type="link" onClick={() => navigate('/login')} style={{ color: '#333' }}>
                 登录
               </Button>
-              <Button type="primary" onClick={() => navigate('/register')}>
+              <Button 
+                type="primary" 
+                onClick={() => navigate('/register')}
+                style={{ background: '#FF6B00', borderColor: '#FF6B00' }}
+              >
                 注册
               </Button>
             </>
           )}
         </div>
       </Header>
-      <Content style={{ padding: '24px 50px', flex: 1 }}>
+      )}
+      <Content style={{ padding: isHomePage ? '0' : '24px 50px', flex: 1 }}>
         <Outlet />
       </Content>
-      <Footer style={{ textAlign: 'center', background: '#fff' }}>
-        智能 AI 校园二手交易平台 ©2024 Created by xujun
-      </Footer>
+      {/* 悬浮功能栏 - 首页和登录/注册页面不显示 */}
+      {!isHomePage && !isAuthPage && <FloatingDock />}
+      {!isHomePage && (
+        <Footer style={{ textAlign: 'center', background: '#fff', color: '#999' }}>
+          🔄 UniSwap - 智能校园二手交易平台 ©2024
+        </Footer>
+      )}
     </AntLayout>
   )
 }

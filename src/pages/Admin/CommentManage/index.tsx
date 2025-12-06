@@ -3,6 +3,7 @@ import { Card, Table, Button, Modal, Form, Input, message, Space, Popconfirm, Ta
 import { EditOutlined, DeleteOutlined, CommentOutlined, SearchOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import api from '../../../api/request'
+import { formatDateTime } from '../../../utils/format'
 import './index.css'
 
 const { TextArea } = Input
@@ -139,7 +140,7 @@ const CommentManage: React.FC = () => {
       dataIndex: 'createTime',
       key: 'createTime',
       width: 180,
-      render: (text: string) => new Date(text).toLocaleString(),
+      render: (text: string) => formatDateTime(text),
     },
     {
       title: '操作',

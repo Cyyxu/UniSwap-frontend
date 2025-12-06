@@ -3,6 +3,7 @@ import { Card, Table, Button, Modal, Form, InputNumber, message, Space, Popconfi
 import { EditOutlined, DeleteOutlined, StarOutlined, SearchOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import api from '../../../api/request'
+import { formatDateTime } from '../../../utils/format'
 import './index.css'
 
 interface CommodityScore {
@@ -143,7 +144,7 @@ const ScoreManage: React.FC = () => {
       dataIndex: 'createTime',
       key: 'createTime',
       width: 180,
-      render: (text: string) => new Date(text).toLocaleString(),
+      render: (text: string) => formatDateTime(text),
     },
     {
       title: '操作',

@@ -1,7 +1,7 @@
 {
-  "name": "cyyai-frontend",
+  "name": "uniswap-frontend",
   "version": "1.0.0",
-  "description": "智能 AI 校园二手交易平台前端",
+  "description": "UniSwap - 智能校园二手交易平台前端",
   "private": true,
   "dependencies": {
     "react": "^18.2.0",

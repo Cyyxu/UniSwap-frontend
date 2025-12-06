@@ -8,6 +8,10 @@ export interface Statistics {
   todayUsers: number
   todayOrders: number
   todayPosts: number
+  // 后端计算的增长率
+  userGrowthRate: number
+  orderGrowthRate: number
+  postGrowthRate: number
 }
 
 export interface TrendData {
@@ -19,8 +23,8 @@ export interface TrendData {
 
 export const statisticsApi = {
   // 获取总体统计数据
-  getOverall: () => api.get<Statistics>('/statistics/overall'),
+  getOverall: () => api.get<Statistics>('/statistic/overall'),
   
   // 获取趋势数据
-  getTrend: (days: number = 7) => api.get<TrendData[]>(`/statistics/trend?days=${days}`),
+  getTrend: (days: number = 7) => api.get<TrendData[]>(`/statistic/trend?days=${days}`),
 }

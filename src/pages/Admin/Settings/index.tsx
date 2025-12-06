@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   Card, 
   Tabs, 
@@ -43,6 +43,17 @@ const Settings = () => {
     layout: 'side',
   })
 
+  // 当 user 改变时，同步更新表单值
+  useEffect(() => {
+    if (user) {
+      accountForm.setFieldsValue({
+        userName: user.userName,
+        userAccount: user.userAccount,
+        userAvatar: user.userAvatar,
+      })
+    }
+  }, [user, accountForm])
+
   // 账户设置保存
   const handleAccountSave = async (values: any) => {
     try {
@@ -54,7 +65,20 @@ const Settings = () => {
       
       // 更新本地用户信息
       const updatedUser: any = await userApi.getCurrentUser()
-      setUser(updatedUser)
+      if (updatedUser) {
+        setUser({
+          id: updatedUser.id,
+          userAccount: updatedUser.userAccount,
+          userName: updatedUser.userName,
+          userAvatar: updatedUser.userAvatar,
+          userRole: updatedUser.userRole,
+        })
+        // 同步更新表单显示
+        accountForm.setFieldsValue({
+          userName: updatedUser.userName,
+          userAvatar: updatedUser.userAvatar,
+        })
+      }
       
       message.success('账户信息更新成功')
     } catch (error: any) {
@@ -115,7 +139,7 @@ const Settings = () => {
   }
 
   // 头像上传 - 暂时只支持URL输入
-  const handleAvatarUpload = async (info: any) => {
+  const handleAvatarUpload = () => {
     // TODO: 等待后端实现文件上传接口
     message.info('头像上传功能暂未开放，请在下方输入头像URL')
   }
@@ -179,7 +203,6 @@ const Settings = () => {
               <Form.Item
                 label="头像URL"
                 name="userAvatar"
-                initialValue={user?.userAvatar}
               >
                 <Input placeholder="请输入头像图片链接" />
               </Form.Item>

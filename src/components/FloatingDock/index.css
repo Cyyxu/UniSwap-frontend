@@ -1,0 +1,102 @@
+/* ========== 悬浮功能栏 ========== */
+.xy-floating-dock {
+  position: fixed;
+  right: 20px;
+  bottom: 100px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 发布按钮 - 胶囊样式 */
+.xy-dock-publish {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #FF6B00 0%, #FF8533 100%);
+  color: #fff;
+  border-radius: 24px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(255, 107, 0, 0.4);
+  transition: all 0.3s ease;
+}
+
+.xy-dock-publish:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 107, 0, 0.5);
+}
+
+.xy-dock-publish .anticon {
+  font-size: 16px;
+}
+
+/* 功能按钮组 */
+.xy-dock-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 单个功能按钮 - 胶囊样式 */
+.xy-dock-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #666;
+  font-size: 12px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.xy-dock-btn:hover {
+  background: #FFF9E6;
+  color: #FF6B00;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.xy-dock-btn .anticon {
+  font-size: 16px;
+}
+
+/* 回到顶部按钮动画 */
+.xy-dock-top {
+  animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .xy-floating-dock {
+    right: 12px;
+    bottom: 80px;
+  }
+
+  .xy-dock-publish {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .xy-dock-btn {
+    padding: 10px 14px;
+  }
+}

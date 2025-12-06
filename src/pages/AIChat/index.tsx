@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Input, Button, List, Avatar, message, Spin } from 'antd'
 import { SendOutlined, RobotOutlined, UserOutlined, ArrowLeftOutlined } from '@ant-design/icons'
-import { aiApi, AIMessage, AIMessageAddRequest } from '../../api/ai'
+import { aiApi, AIMessage } from '../../api/ai'
 import dayjs from 'dayjs'
 import './index.css'
 
@@ -15,63 +15,72 @@ const AIChat = () => {
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  const scrollToBottom = () => {
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    })
+  }
+
   useEffect(() => {
+    let cancelled = false
+
+    const loadMessages = async () => {
+      try {
+        const res = await aiApi.getMyList({ current: 1, pageSize: 50 })
+        const records = res?.records || []
+        // 将旧格式的消息（同时包含用户输入和AI回复）拆分成两条消息
+        const separatedMessages: AIMessage[] = []
+        records.forEach((msg: AIMessage) => {
+          if (msg.userInputText && msg.aiGenerateText) {
+            // 拆分成用户消息和AI消息
+            const userMsgTime = new Date(msg.createTime)
+            const aiMsgTime = new Date(userMsgTime.getTime() + 1000) // AI消息时间稍晚1秒
+            
+            separatedMessages.push({
+              ...msg,
+              id: msg.id * 1000, // 用户消息ID
+              aiGenerateText: '', // 用户消息没有AI回复
+              createTime: userMsgTime.toISOString(),
+            })
+            separatedMessages.push({
+              ...msg,
+              id: msg.id * 1000 + 1, // AI消息ID
+              userInputText: '', // AI消息没有用户输入
+              createTime: aiMsgTime.toISOString(),
+            })
+          } else if (msg.userInputText && !msg.aiGenerateText) {
+            // 只有用户输入，是用户消息
+            separatedMessages.push(msg)
+          } else if (msg.aiGenerateText && !msg.userInputText) {
+            // 只有AI回复，是AI消息
+            separatedMessages.push(msg)
+          }
+        })
+        // 按创建时间排序
+        separatedMessages.sort((a, b) => 
+          new Date(a.createTime).getTime() - new Date(b.createTime).getTime()
+        )
+        if (!cancelled) {
+          setMessages(separatedMessages)
+          scrollToBottom()
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('加载消息失败', error)
+        }
+      }
+    }
+
     loadMessages()
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   useEffect(() => {
     scrollToBottom()
   }, [messages])
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
-  const loadMessages = async () => {
-    try {
-      const res = await aiApi.getMyList({ current: 1, pageSize: 50 })
-      const records = res?.records || []
-      // 将旧格式的消息（同时包含用户输入和AI回复）拆分成两条消息
-      const separatedMessages: AIMessage[] = []
-      records.forEach((msg: AIMessage) => {
-        if (msg.userInputText && msg.aiGenerateText) {
-          // 拆分成用户消息和AI消息
-          const userMsgTime = new Date(msg.createTime)
-          const aiMsgTime = new Date(userMsgTime.getTime() + 1000) // AI消息时间稍晚1秒
-          
-          separatedMessages.push({
-            ...msg,
-            id: msg.id * 1000, // 用户消息ID
-            aiGenerateText: '', // 用户消息没有AI回复
-            createTime: userMsgTime.toISOString(),
-          })
-          separatedMessages.push({
-            ...msg,
-            id: msg.id * 1000 + 1, // AI消息ID
-            userInputText: '', // AI消息没有用户输入
-            createTime: aiMsgTime.toISOString(),
-          })
-        } else if (msg.userInputText && !msg.aiGenerateText) {
-          // 只有用户输入，是用户消息
-          separatedMessages.push(msg)
-        } else if (msg.aiGenerateText && !msg.userInputText) {
-          // 只有AI回复，是AI消息
-          separatedMessages.push(msg)
-        }
-      })
-      // 按创建时间排序
-      separatedMessages.sort((a, b) => 
-        new Date(a.createTime).getTime() - new Date(b.createTime).getTime()
-      )
-      setMessages(separatedMessages)
-      // 加载完消息后，延迟滚动到底部，确保DOM已更新
-      setTimeout(() => {
-        scrollToBottom()
-      }, 100)
-    } catch (error) {
-      console.error('加载消息失败', error)
-    }
-  }
 
   const handleSend = async () => {
     if (!input.trim()) {
@@ -83,18 +92,18 @@ const AIChat = () => {
     setInput('')
     setLoading(true)
 
+    const now = Date.now()
     // 添加用户消息到列表（单独显示，不合并）
     const userMsg: AIMessage = {
-      id: Date.now(),
+      id: now,
       userId: 0,
       userInputText: userMessage,
       aiGenerateText: '', // 用户消息没有AI回复
       createTime: new Date().toISOString(),
     }
-    setMessages((prev) => [...prev, userMsg])
 
     // 添加一个临时的AI消息占位符，显示加载状态
-    const tempAiMsgId = Date.now() + 1
+    const tempAiMsgId = now + 1
     const tempAiMsg: AIMessage = {
       id: tempAiMsgId,
       userId: 0,
@@ -102,7 +111,7 @@ const AIChat = () => {
       aiGenerateText: '',
       createTime: new Date().toISOString(),
     }
-    setMessages((prev) => [...prev, tempAiMsg])
+    setMessages((prev) => [...prev, userMsg, tempAiMsg])
 
     try {
       // 显示提示信息，告知用户AI正在处理
@@ -149,8 +158,8 @@ const AIChat = () => {
   }
 
   // 获取历史会话列表（按日期分组）
-  const getHistorySessions = () => {
-    const sessions: { [key: string]: AIMessage[] } = {}
+  const historySessions = useMemo(() => {
+    const sessions: Record<string, AIMessage[]> = {}
     messages.forEach((msg) => {
       const date = dayjs(msg.createTime).format('YYYY-MM-DD')
       if (!sessions[date]) {
@@ -159,7 +168,7 @@ const AIChat = () => {
       sessions[date].push(msg)
     })
     return sessions
-  }
+  }, [messages])
 
   return (
     <div className="ai-chat-container">
@@ -172,7 +181,7 @@ const AIChat = () => {
             bodyStyle={{ padding: 0 }}
           >
             <div className="history-list">
-              {Object.entries(getHistorySessions()).map(([date, msgs]) => (
+              {Object.entries(historySessions).map(([date, msgs]) => (
                 <div key={date} className="history-group">
                   <div className="history-date">{date}</div>
                   {msgs.filter(m => m.userInputText).map((msg) => (
@@ -281,4 +290,3 @@ const AIChat = () => {
 }
 
 export default AIChat
-

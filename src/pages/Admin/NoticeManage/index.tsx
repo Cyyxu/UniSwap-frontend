@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Card, Table, Button, Modal, Form, Input, message, Space, Popconfirm } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, NotificationOutlined } from '@ant-design/icons'
 import api from '../../../api/request'
+import { formatDateTime } from '../../../utils/format'
 import './index.css'
 
 const { TextArea } = Input
@@ -123,14 +124,14 @@ const NoticeManage: React.FC = () => {
       dataIndex: 'createTime',
       key: 'createTime',
       width: 180,
-      render: (text: string) => new Date(text).toLocaleString(),
+      render: (text: string) => formatDateTime(text),
     },
     {
       title: '更新时间',
       dataIndex: 'updateTime',
       key: 'updateTime',
       width: 180,
-      render: (text: string) => text ? new Date(text).toLocaleString() : '-',
+      render: (text: string) => formatDateTime(text),
     },
     {
       title: '操作',

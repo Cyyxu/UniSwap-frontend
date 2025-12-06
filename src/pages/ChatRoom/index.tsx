@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { Layout, List, Avatar, Input, Button, Empty, message as antMessage, Badge, Popconfirm } from 'antd'
-import { SendOutlined, UserOutlined, ArrowLeftOutlined, DeleteOutlined } from '@ant-design/icons'
+import { SendOutlined, UserOutlined, DeleteOutlined } from '@ant-design/icons'
 import { messageApi } from '../../api/message'
 import { useAuthStore } from '../../store/authStore'
 import dayjs from 'dayjs'
@@ -31,7 +31,6 @@ interface Conversation {
 
 const ChatRoom = () => {
   const [searchParams] = useSearchParams()
-  const navigate = useNavigate()
   const { user } = useAuthStore()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
@@ -312,14 +311,6 @@ const ChatRoom = () => {
 
   return (
     <div className="chat-room-container">
-      <Button
-        icon={<ArrowLeftOutlined />}
-        onClick={() => navigate(-1)}
-        style={{ marginBottom: 16 }}
-      >
-        返回
-      </Button>
-      
       <Layout className="chat-layout">
         {/* 左侧会话列表 */}
         <Sider width={300} theme="light" className="conversation-sider">
@@ -455,7 +446,11 @@ const ChatRoom = () => {
               </div>
             </>
           ) : (
-            <Empty description="请选择一个会话" style={{ marginTop: '20%' }} />
+            <div className="empty-chat-state">
+              <div className="empty-icon">💬</div>
+              <div className="empty-title">闲来无事找个人聊聊吧</div>
+              <div className="empty-desc">选择左侧会话开始聊天</div>
+            </div>
           )}
         </Content>
       </Layout>

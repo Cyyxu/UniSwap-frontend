@@ -3,8 +3,12 @@ import { message } from 'antd'
 import { useAuthStore } from '../store/authStore'
 
 // AI请求专用axios实例，SparkAI可能需要较长时间响应，超时时间设置为120秒
+const aiBaseURL = import.meta.env.PROD 
+  ? 'http://120.26.104.183:8109/uniswap' 
+  : '/uniswap'
+
 const aiApiInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/uniswap',
+  baseURL: aiBaseURL,
   timeout: 120000, // 120秒超时（SparkAI WebSocket可能需要较长时间）
   withCredentials: true,
 })

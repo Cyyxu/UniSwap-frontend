@@ -97,7 +97,8 @@ const Layout = () => {
             }}
             onClick={() => navigate('/')}
           >
-            🔄 UniSwap
+            <img src="/logo-icon.svg" alt="UniSwap" style={{ width: 36, height: 36 }} />
+            UniSwap
           </div>
           <Menu
             mode="horizontal"
@@ -158,7 +159,7 @@ const Layout = () => {
       {!isHomePage && !isAuthPage && <FloatingDock />}
       {!isHomePage && (
         <Footer style={{ textAlign: 'center', background: '#fff', color: '#999' }}>
-          🔄 UniSwap - 智能校园二手交易平台 ©2024
+          UniSwap - 智能校园二手交易平台 ©2024
         </Footer>
       )}
     </AntLayout>

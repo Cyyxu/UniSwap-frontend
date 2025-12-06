@@ -181,7 +181,7 @@ const Home = () => {
         <div className="xy-navbar-content">
           <div className="xy-navbar-left">
             <div className="xy-logo" onClick={() => navigate('/')}>
-              <span className="xy-logo-icon">🔄</span>
+              <img src="/logo-icon.svg" alt="UniSwap" className="xy-logo-icon" style={{ width: 36, height: 36 }} />
               <span className="xy-logo-text">UniSwap</span>
             </div>
           </div>
@@ -207,9 +207,8 @@ const Home = () => {
               <>
                 <div className="xy-nav-item" onClick={() => navigate('/message')}>
                   <Badge count={0} size="small">
-                    <MessageOutlined className="xy-nav-icon" />
+                    <MessageOutlined className="xy-nav-icon" style={{ fontSize: 24 }} />
                   </Badge>
-                  <span>消息</span>
                 </div>
                 <Button 
                   type="primary" 

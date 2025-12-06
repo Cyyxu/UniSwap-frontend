@@ -2,22 +2,15 @@ import axios from 'axios'
 import { message } from 'antd'
 import { useAuthStore } from '../store/authStore'
 
-// 根据环境变量设置 baseURL
-const getBaseURL = () => {
-  // 优先使用环境变量配置
-  if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL
-  }
-  // 生产环境使用后端服务器地址
-  if (import.meta.env.PROD) {
-    return 'http://120.26.104.183:8109/uniswap'
-  }
-  // 开发环境使用代理
-  return '/uniswap'
-}
+// 开发环境通过 Vite 代理，生产环境直接访问后端
+const baseURL = import.meta.env.PROD 
+  ? 'http://120.26.104.183:8109/uniswap' 
+  : '/uniswap'
+
+console.log('[API] baseURL:', baseURL)
 
 const api = axios.create({
-  baseURL: getBaseURL(),
+  baseURL,
   timeout: 30000,
   withCredentials: true,
 })
@@ -27,6 +20,9 @@ const formatAuthToken = (token: string) => (token.startsWith('Bearer ') ? token 
 // 请求拦截器
 api.interceptors.request.use(
   (config) => {
+    // 调试日志
+    console.log('[API Request]', config.method?.toUpperCase(), config.baseURL, config.url)
+    
     const token = localStorage.getItem('token')
     if (token) {
       config.headers.Authorization = formatAuthToken(token)

@@ -56,5 +56,5 @@ export const scoreApi = {
   
   // 获取商品平均评分
   getAverage: (commodityId: number) => 
-    request.post<number>('/api/score/average', { commodityId }),
+    request.post<number>('/api/score/average', { id: commodityId }),
 }

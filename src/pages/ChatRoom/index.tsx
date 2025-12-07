@@ -68,7 +68,11 @@ const ChatRoom = () => {
       ws.close()
     }
 
-    const wsUrl = `ws://localhost:8109/api/ws/chat/${user.id}`
+    // 开发环境直连后端，生产环境使用相对路径
+    const wsHost = import.meta.env.PROD 
+      ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`
+      : 'ws://localhost:8109'
+    const wsUrl = `${wsHost}/uniswap/api/ws/chat/${user.id}`
     console.log('WebSocket连接URL:', wsUrl)
     const websocket = new WebSocket(wsUrl)
     
@@ -135,24 +139,20 @@ const ChatRoom = () => {
     }
   }, [ws])
 
-  // 加载在线用户列表
-  const loadOnlineUsers = async () => {
+  // 加载在线用户统计（需要管理员权限）
+  const loadOnlineStats = async () => {
     try {
-      const res: any = await messageApi.getOnlineUsers()
-      const onlineUserIds = res || []
-      setOnlineUsers(new Set(onlineUserIds))
+      const res: any = await messageApi.getOnlineStats()
+      // 合并 WebSocket 在线用户和活跃用户
+      const allOnlineIds = [
+        ...(res?.wsOnlineUserIds || []),
+        ...(res?.activeUserIds || [])
+      ]
+      setOnlineUsers(new Set(allOnlineIds))
+      setOnlineCount(res?.activeCount || res?.wsOnlineCount || 0)
     } catch (error) {
-      console.error('加载在线用户失败:', error)
-    }
-  }
-
-  // 加载在线人数统计
-  const loadOnlineCount = async () => {
-    try {
-      const res: any = await messageApi.getOnlineCount()
-      setOnlineCount(res.count || 0)
-    } catch (error) {
-      console.error('加载在线人数失败:', error)
+      // 非管理员可能没有权限，静默处理
+      console.log('加载在线统计失败（可能无权限）:', error)
     }
   }
 
@@ -162,9 +162,8 @@ const ChatRoom = () => {
       const res: any = await messageApi.getConversations()
       const conversationList = res || []
       
-      // 同时加载在线用户和在线人数
-      await loadOnlineUsers()
-      await loadOnlineCount()
+      // 加载在线用户统计
+      await loadOnlineStats()
       
       setConversations(conversationList.map((conv: any) => ({
         userId: conv.userId,
@@ -294,10 +293,9 @@ const ChatRoom = () => {
   useEffect(() => {
     loadConversations()
     
-    // 定时刷新在线人数（每30秒）
+    // 定时刷新在线统计（每30秒）
     const interval = setInterval(() => {
-      loadOnlineCount()
-      loadOnlineUsers()
+      loadOnlineStats()
     }, 30000)
     
     return () => clearInterval(interval)

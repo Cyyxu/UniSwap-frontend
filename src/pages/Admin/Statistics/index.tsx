@@ -6,9 +6,11 @@ import {
   FileTextOutlined,
   ArrowUpOutlined,
   ArrowDownOutlined,
+  TeamOutlined,
 } from '@ant-design/icons'
 import { useEffect, useState } from 'react'
 import { statisticsApi, TrendData } from '../../../api/statistics'
+import { messageApi } from '../../../api/message'
 import './index.css'
 
 const Statistics = () => {
@@ -27,10 +29,26 @@ const Statistics = () => {
   const [loading, setLoading] = useState(false)
   const [trendData, setTrendData] = useState<TrendData[]>([])
   const [monthlyData, setMonthlyData] = useState<TrendData[]>([])
+  const [wsOnlineCount, setWsOnlineCount] = useState(0)
+  const [activeCount, setActiveCount] = useState(0)
 
   useEffect(() => {
     loadStats()
+    loadOnlineStats()
+    // 每30秒刷新在线人数
+    const interval = setInterval(loadOnlineStats, 30000)
+    return () => clearInterval(interval)
   }, [])
+
+  const loadOnlineStats = async () => {
+    try {
+      const res: any = await messageApi.getOnlineStats()
+      setWsOnlineCount(res?.wsOnlineCount || 0)
+      setActiveCount(res?.activeCount || 0)
+    } catch (error) {
+      console.log('加载在线统计失败:', error)
+    }
+  }
 
   const loadStats = async () => {
     setLoading(true)
@@ -169,6 +187,22 @@ const Statistics = () => {
             </div>
           </Card>
         </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card hoverable>
+            <Statistic
+              title="活跃用户数"
+              value={activeCount}
+              prefix={<TeamOutlined />}
+              valueStyle={{ color: '#13c2c2' }}
+            />
+            <div style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
+              5分钟内有操作 | WebSocket在线: {wsOnlineCount}
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col xs={24} sm={12} lg={6}>
           <Card hoverable loading={loading}>
             <Statistic

@@ -233,7 +233,7 @@ const CommodityDetail = () => {
             className="xy-back-btn"
           />
           <div className="xy-seller-info" onClick={() => navigate(`/user/${commodity.adminId}`)}>
-            <Avatar size={40} icon={<UserOutlined />} />
+            <Avatar size={40} src={(commodity as any).adminAvatar} icon={<UserOutlined />} />
             <div className="xy-seller-meta">
               <span className="xy-seller-name">{(commodity as any).adminName || '卖家'}</span>
               <span className="xy-seller-detail">
@@ -242,7 +242,10 @@ const CommodityDetail = () => {
             </div>
           </div>
           <div className="xy-header-right">
-            <span className="xy-shop-tag">🔄 UniSwap</span>
+            <span className="xy-shop-tag">
+              <img src="/logo-icon.svg" alt="UniSwap" style={{ width: 20, height: 20, marginRight: 4, verticalAlign: 'middle' }} />
+              UniSwap
+            </span>
           </div>
         </div>
       </div>

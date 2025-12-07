@@ -1,0 +1,45 @@
+.lazy-image-container {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.lazy-image-skeleton {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.lazy-image-skeleton .ant-skeleton-image {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.lazy-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.lazy-image-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.lazy-image-visible {
+  opacity: 1;
+}
+
+.lazy-image-hidden {
+  opacity: 0;
+}

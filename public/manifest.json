@@ -1,0 +1,27 @@
+{
+  "name": "UniSwap - 智能校园二手交易平台",
+  "short_name": "UniSwap",
+  "description": "校园二手交易平台，让闲置物品流转起来",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#FFE066",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["shopping", "education", "social"],
+  "lang": "zh-CN",
+  "dir": "ltr"
+}

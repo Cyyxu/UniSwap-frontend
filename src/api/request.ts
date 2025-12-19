@@ -2,10 +2,12 @@ import axios from 'axios'
 import { message } from 'antd'
 import { useAuthStore } from '../store/authStore'
 
-// 开发环境通过 Vite 代理，生产环境直接访问后端
-const baseURL = import.meta.env.PROD 
-  ? 'http://120.26.104.183:8109/uniswap' 
-  : '/uniswap'
+// 优先读取环境变量，其次根据环境选择默认值
+const baseURL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.PROD
+    ? 'http://120.26.104.183:8109/uniswap'
+    : '/uniswap')
 
 console.log('[API] baseURL:', baseURL)
 

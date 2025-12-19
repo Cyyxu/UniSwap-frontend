@@ -9,6 +9,7 @@ export interface Order {
   paymentAmount: number
   payStatus: number
   createTime: string
+  createdAt?: string
 }
 
 export interface OrderQuery {
@@ -38,4 +39,3 @@ export const orderApi = {
   // 获取订单热力图数据
   getHeatmap: (params: { userId?: number; payStatus?: number }) => api.post('/api/order/heatmap', params),
 }
-

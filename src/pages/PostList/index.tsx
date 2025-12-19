@@ -79,7 +79,7 @@ const PostList = () => {
                   />
                   <div className="post-meta">
                     <div className="post-author">{post.user?.userName || post.userName || '未知用户'}</div>
-                    <div className="post-time">{dayjs(post.createTime).format('YYYY-MM-DD HH:mm')}</div>
+                    <div className="post-time">{dayjs(post.createdAt).format('YYYY-MM-DD HH:mm')}</div>
                   </div>
                 </div>
                 <h3 className="post-title">{post.title}</h3>
@@ -117,4 +117,3 @@ const PostList = () => {
 }
 
 export default PostList
-

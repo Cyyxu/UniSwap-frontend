@@ -11,6 +11,7 @@ interface Order {
   paymentAmount: number
   payStatus: number
   createTime: string
+  createdAt?: string
 }
 
 const OrderManage = () => {
@@ -31,7 +32,11 @@ const OrderManage = () => {
     setLoading(true)
     try {
       const res = await orderApi.getList(query)
-      setOrders(res?.records || [])
+      const records = (res?.records || []).map((item: any) => ({
+        ...item,
+        createTime: item.createTime || item.createdAt || '',
+      }))
+      setOrders(records)
       setTotal(res?.total || 0)
     } catch (error) {
       console.error('加载订单列表失败', error)
@@ -113,4 +118,3 @@ const OrderManage = () => {
 }
 
 export default OrderManage
-

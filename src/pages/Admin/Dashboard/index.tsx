@@ -40,6 +40,13 @@ const Dashboard = () => {
         statisticsApi.getTrend(7),
       ])
 
+      // 兼容后端返回数组或 { records: [] } 结构
+      const trendList: TrendData[] = Array.isArray(trendDataList?.records)
+        ? trendDataList.records
+        : Array.isArray(trendDataList)
+          ? trendDataList
+          : []
+
       // 设置统计数据（包含后端计算的增长率）
       setStats({
         totalUsers: statsData.totalUsers || 0,
@@ -55,11 +62,11 @@ const Dashboard = () => {
       })
 
       // 设置趋势数据
-      setTrendData(trendDataList || [])
+      setTrendData(trendList)
 
       // 生成最近活动（基于趋势数据）
       const activities: any[] = []
-      trendDataList.forEach((trend: TrendData) => {
+      trendList.forEach((trend: TrendData) => {
         if (trend.users > 0) {
           activities.push({
             type: 'user',
@@ -258,4 +265,3 @@ const Dashboard = () => {
 }
 
 export default Dashboard
-

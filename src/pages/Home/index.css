@@ -149,9 +149,7 @@
 
 /* ========== 主体内容区 ========== */
 .xy-main {
-  max-width: 1200px;
-  margin: 16px auto;
-  padding: 0 24px;
+  margin: 16px 24px;
   display: grid;
   grid-template-columns: 180px 1fr;
   gap: 16px;
@@ -205,19 +203,19 @@
 .xy-bento-area {
   background: #fff;
   border-radius: 12px;
-  padding: 16px;
+  padding: 12px;
 }
 
 .xy-bento-grid {
   display: grid;
-  grid-template-columns: 280px repeat(2, 1fr);
-  grid-template-rows: repeat(2, 130px);
-  gap: 12px;
+  grid-template-columns: 240px 1fr 240px;
+  grid-template-rows: repeat(4, 1fr);
+  gap: 8px;
+  height: 380px;
 }
 
 /* 主推大卡片 */
 .xy-bento-main {
-  grid-row: span 2;
   border-radius: 12px;
   padding: 20px;
   cursor: pointer;
@@ -285,11 +283,12 @@
 /* 小分类卡片 */
 .xy-bento-card {
   border-radius: 12px;
-  padding: 12px;
+  padding: 10px;
   cursor: pointer;
   transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .xy-bento-card:hover {
@@ -301,7 +300,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
 }
 
 .xy-bento-tag {
@@ -319,9 +319,10 @@
 
 .xy-bento-products {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   flex: 1;
-  align-items: flex-end;
+  align-items: stretch;
+  overflow: hidden;
 }
 
 .xy-bento-product {
@@ -329,15 +330,82 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  min-width: 0;
 }
 
 .xy-bento-product img {
   width: 100%;
-  aspect-ratio: 1;
+  flex: 1;
   object-fit: cover;
   border-radius: 8px;
   background: #f5f5f5;
+}
+
+.xy-bento-price {
+  font-size: 12px;
+  color: #FF4D4F;
+  font-weight: bold;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+/* 中间大卡片 - 衣橱捡漏 */
+.xy-bento-card-center {
+  padding: 10px;
+}
+
+.xy-bento-single-image {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.xy-bento-single-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.xy-bento-single-image img:hover {
+  transform: scale(1.02);
+}
+
+/* 右侧小卡片 */
+.xy-bento-card-right {
+  padding: 8px;
+}
+
+.xy-bento-card-right .xy-bento-card-header {
+  margin-bottom: 4px;
+}
+
+.xy-bento-card-right .xy-bento-tag {
+  font-size: 11px;
+  padding: 2px 6px;
+}
+
+.xy-bento-card-right .xy-bento-subtitle {
+  font-size: 10px;
+}
+
+.xy-bento-card-right .xy-bento-products {
+  gap: 6px;
+}
+
+.xy-bento-card-right .xy-bento-price {
+  font-size: 11px;
+}
+
+.xy-bento-card-small .xy-bento-price {
+  font-size: 10px;
+  margin-top: 2px;
 }
 
 .xy-bento-price {
@@ -348,9 +416,8 @@
 
 /* ========== 猜你喜欢 - 商品Feed流 ========== */
 .xy-feed-section {
-  max-width: 1200px;
-  margin: 24px auto;
-  padding: 0 24px;
+  margin: 24px;
+  padding: 0;
 }
 
 .xy-feed-header {
@@ -589,6 +656,137 @@
   margin: 8px 0 0 0;
   font-size: 12px;
   color: #666;
+}
+
+/* AI助手按钮 */
+.dock-ai {
+  background: linear-gradient(135deg, #FFCC00 0%, #FF9500 100%);
+  border-radius: 12px;
+}
+
+.dock-ai .dock-icon,
+.dock-ai .dock-label {
+  color: #fff;
+}
+
+.dock-ai:hover {
+  background: linear-gradient(135deg, #FFD633 0%, #FFA520 100%);
+}
+
+/* AI聊天框 */
+.ai-chat-box {
+  position: fixed;
+  right: 100px;
+  bottom: 80px;
+  width: 360px;
+  height: 480px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: linear-gradient(135deg, #FFCC00 0%, #FF9500 100%);
+  color: #fff;
+  border-radius: 16px 16px 0 0;
+  font-weight: 600;
+}
+
+.ai-chat-close {
+  margin-left: auto;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.ai-chat-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.ai-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-chat-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.ai-chat-message.user {
+  flex-direction: row-reverse;
+}
+
+.ai-chat-bubble {
+  max-width: 70%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.ai-chat-message.ai .ai-chat-bubble {
+  background: #FFF9E6;
+  color: #333;
+  border-bottom-left-radius: 4px;
+}
+
+.ai-chat-message.user .ai-chat-bubble {
+  background: linear-gradient(135deg, #FFCC00 0%, #FF9500 100%);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.ai-chat-input {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.ai-chat-input .ant-input {
+  border-radius: 20px;
+}
+
+.ai-chat-input .ant-btn {
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #FFCC00 0%, #FF9500 100%);
+  border: none;
+}
+
+.ai-chat-input .ant-btn:hover {
+  background: linear-gradient(135deg, #FFD633 0%, #FFA520 100%);
 }
 
 /* ========== 响应式设计 ========== */

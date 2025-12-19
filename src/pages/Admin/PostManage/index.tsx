@@ -11,7 +11,7 @@ interface Post {
   content: string
   thumbNum: number
   favourNum: number
-  createTime: string
+  createdAt: string
 }
 
 const PostManage = () => {
@@ -130,8 +130,8 @@ const PostManage = () => {
     },
     {
       title: '创建时间',
-      dataIndex: 'createTime',
-      key: 'createTime',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
     },
     {
       title: '操作',
@@ -236,4 +236,3 @@ const PostManage = () => {
 }
 
 export default PostManage
-

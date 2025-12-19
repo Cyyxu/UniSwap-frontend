@@ -15,6 +15,7 @@ export interface Commodity {
   isListed: number
   adminId: number
   createTime: string
+  createdAt?: string
 }
 
 export interface CommodityQuery {
@@ -70,4 +71,3 @@ export const commodityApi = {
   // 获取当前用户的商品列表
   getMine: (params: CommodityQuery) => api.post('/api/commodity/mine', params),
 }
-

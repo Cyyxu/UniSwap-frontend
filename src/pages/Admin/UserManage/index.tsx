@@ -12,6 +12,7 @@ interface User {
   userAvatar: string
   userRole: string
   createTime: string
+  createdAt?: string
 }
 
 const UserManage = () => {
@@ -32,7 +33,11 @@ const UserManage = () => {
     setLoading(true)
     try {
       const res = await userApi.getList(query)
-      setUsers(res?.records || [])
+      const records = (res?.records || []).map((item: any) => ({
+        ...item,
+        createTime: item.createTime || item.createdAt || '',
+      }))
+      setUsers(records)
       setTotal(res?.total || 0)
     } catch (error) {
       console.error('加载用户列表失败', error)
@@ -145,4 +150,3 @@ const UserManage = () => {
 }
 
 export default UserManage
-

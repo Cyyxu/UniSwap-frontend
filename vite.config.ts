@@ -64,8 +64,23 @@ export default defineConfig(({ command, mode }) => ({
             console.log('代理响应:', req.method, req.url, '->', proxyRes.statusCode)
           })
         },
-      }
+      },
+      // 备用代理：支持 VITE_API_BASE_URL 配置为 /api
+      '/api': {
+        target: 'http://localhost:8109',
+        changeOrigin: true,
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.error('代理错误:', err.message)
+          })
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log('代理请求:', req.method, req.url, '->', proxyReq.path)
+          })
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('代理响应:', req.method, req.url, '->', proxyRes.statusCode)
+          })
+        },
+      },
     }
   }
 }))
-

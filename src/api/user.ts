@@ -37,6 +37,7 @@ export interface User {
   userAvatar: string
   userRole: string
   createTime: string
+  createdAt?: string
 }
 
 export interface UpdateMyUserRequest {
@@ -69,4 +70,3 @@ export const userApi = {
   // 修改密码
   updatePassword: (data: UpdatePasswordRequest) => api.post<boolean>('/api/user/password', data),
 }
-

@@ -16,6 +16,12 @@ const UserFavourites: React.FC = () => {
   const [userName, setUserName] = useState('')
   const navigate = useNavigate()
 
+  const normalizePosts = (records: any[] = []): Post[] =>
+    records.map((item) => {
+      const { createTime, ...rest } = item
+      return { ...rest, createdAt: item.createdAt || createTime || '' }
+    })
+
   const userId = searchParams.get('userId')
 
   const loadUserFavourites = async (page: number = 1) => {
@@ -31,7 +37,7 @@ const UserFavourites: React.FC = () => {
         current: page,
         pageSize,
       })
-      setPosts(res.data.records || [])
+      setPosts(normalizePosts(res.data.records))
       setTotal(res.data.total || 0)
       setCurrent(page)
       
@@ -122,7 +128,7 @@ const UserFavourites: React.FC = () => {
                       <div>
                         <span>作者: {post.user?.userName || '未知'}</span>
                         <span style={{ marginLeft: 16 }}>
-                          {new Date(post.createTime).toLocaleDateString()}
+                          {new Date(post.createdAt || '').toLocaleDateString()}
                         </span>
                       </div>
                     }

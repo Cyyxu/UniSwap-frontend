@@ -17,6 +17,7 @@ interface Commodity {
   degree?: string
   isListed: number
   createTime: string
+  createdAt?: string
 }
 
 interface CommodityType {
@@ -56,7 +57,11 @@ const CommodityManage = () => {
     setLoading(true)
     try {
       const res = await commodityApi.getList(query)
-      setCommodities(res?.records || [])
+      const records = (res?.records || []).map((item: any) => ({
+        ...item,
+        createTime: item.createTime || item.createdAt || '',
+      }))
+      setCommodities(records)
       setTotal(res?.total || 0)
     } catch (error) {
       console.error('加载商品列表失败', error)
@@ -317,4 +322,3 @@ const CommodityManage = () => {
 }
 
 export default CommodityManage
-

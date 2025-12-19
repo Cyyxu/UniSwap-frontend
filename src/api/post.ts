@@ -20,7 +20,7 @@ export interface Post {
   userName?: string
   userAvatar?: string
   user?: PostUser
-  createTime: string
+  createdAt: string
   hasThumb?: boolean
   hasFavour?: boolean
 }
@@ -47,10 +47,31 @@ export interface PostEditRequest {
   tags?: string[]
 }
 
+// 兼容 ES/数据库返回的创建时间字段差异
+const normalizePost = (post: any): Post => {
+  if (!post) return post
+  const { createTime, ...rest } = post
+  const createdAt = post.createdAt || createTime || ''
+  return { ...rest, createdAt }
+}
+
+const normalizePostResponse = (res: any) => {
+  if (!res) return res
+  if (Array.isArray(res)) return res.map(normalizePost)
+  if (res.records) {
+    return {
+      ...res,
+      records: res.records.map(normalizePost),
+    }
+  }
+  return normalizePost(res)
+}
+
 export const postApi = {
-  getList: (params: PostQuery) => api.post('/api/post/page', params),
-  search: (params: PostQuery) => api.post('/api/post/search', params),
-  getDetail: (id: number) => api.post('/api/post/detail', { id }),
+  getList: async (params: PostQuery) => normalizePostResponse(await api.post('/api/post/page', params)),
+  // ES 全文检索接口（按关键词/相关度搜索帖子）
+  search: async (params: PostQuery) => normalizePostResponse(await api.post('/api/post/search', params)),
+  getDetail: async (id: number) => normalizePostResponse(await api.post('/api/post/detail', { id })),
   add: (data: PostAddRequest) => api.post<number>('/api/post/create', data),
   // 后台管理使用manage接口（管理员权限）
   edit: (data: PostEditRequest) => api.post<boolean>('/api/post/manage', data),
@@ -58,4 +79,3 @@ export const postApi = {
   thumb: (postId: number) => api.post<number>('/api/thumb/toggle', { postId }),
   favour: (postId: number) => api.post<number>('/api/favour/toggle', { postId }),
 }
-

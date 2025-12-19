@@ -212,7 +212,7 @@ const PostDetail = () => {
           />
           <div className="post-meta">
             <div className="post-author">{post.user?.userName || post.userName || '未知用户'}</div>
-            <div className="post-time">{dayjs(post.createTime).format('YYYY-MM-DD HH:mm:ss')}</div>
+            <div className="post-time">{dayjs(post.createdAt).format('YYYY-MM-DD HH:mm:ss')}</div>
           </div>
         </div>
         <h1 className="post-title">{post.title}</h1>
@@ -297,4 +297,3 @@ const PostDetail = () => {
 }
 
 export default PostDetail
-

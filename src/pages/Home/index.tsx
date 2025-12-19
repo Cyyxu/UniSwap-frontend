@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Input, Button, Badge, Avatar, Dropdown, Tooltip, QRCode } from 'antd'
+import { Input, Button, Badge, Avatar, Dropdown, Tooltip, QRCode, message } from 'antd'
 import { 
   SearchOutlined, 
   UserOutlined,
@@ -15,12 +15,16 @@ import {
   EditOutlined,
   MobileOutlined,
   CustomerServiceOutlined,
-  VerticalAlignTopOutlined
+  VerticalAlignTopOutlined,
+  SendOutlined,
+  CloseOutlined,
+  LoadingOutlined
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { commodityApi, Commodity } from '../../api/commodity'
 import { useAuthStore } from '../../store/authStore'
 import { userApi } from '../../api/user'
+import { aiApi } from '../../api/ai'
 import './index.css'
 
 const Home = () => {
@@ -29,6 +33,12 @@ const Home = () => {
   const [commodities, setCommodities] = useState<Commodity[]>([])
   const [searchValue, setSearchValue] = useState('')
   const [showBackTop, setShowBackTop] = useState(false)
+  const [showAiChat, setShowAiChat] = useState(false)
+  const [aiMessage, setAiMessage] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiMessages, setAiMessages] = useState<{role: 'user' | 'ai', content: string}[]>([
+    { role: 'ai', content: '你好！我是UniSwap AI助手，有什么可以帮你的吗？' }
+  ])
 
   useEffect(() => {
     loadCommodities()
@@ -259,10 +269,10 @@ const Home = () => {
         {/* 中间 Bento Grid 区域 */}
         <div className="xy-bento-area">
           <div className="xy-bento-grid">
-            {/* 主推卡片 - 大 */}
+            {/* 左侧主推卡片 - 跨4行 */}
             <div 
               className="xy-bento-main"
-              style={{ background: bentoSections[0].bg }}
+              style={{ background: bentoSections[0].bg, gridColumn: 1, gridRow: '1 / 5' }}
               onClick={() => openCategory(undefined, { sortField: 'price', sortOrder: 'ascend' })}
             >
               <div className="xy-bento-main-content">
@@ -278,10 +288,10 @@ const Home = () => {
               </div>
             </div>
 
-            {/* 衣橱捡漏 */}
+            {/* 中间 - 衣橱捡漏（跨4行，单张大图铺满） */}
             <div 
-              className="xy-bento-card"
-              style={{ background: bentoSections[1].bg }}
+              className="xy-bento-card xy-bento-card-center"
+              style={{ background: bentoSections[1].bg, gridColumn: 2, gridRow: '1 / 5' }}
               onClick={() => openCategory(2)}
             >
               <div className="xy-bento-card-header">
@@ -290,20 +300,17 @@ const Home = () => {
                 </span>
                 <span className="xy-bento-subtitle">{bentoSections[1].subtitle}</span>
               </div>
-              <div className="xy-bento-products">
-                {getProductsForSection(2).map((item, i) => (
-                  <div key={i} className="xy-bento-product" onClick={(e) => { e.stopPropagation(); navigate(`/commodity/${item.id}`) }}>
-                    <img src={item.commodityAvatar} alt="" />
-                    <span className="xy-bento-price">¥{Math.floor(Number(item.price))}</span>
-                  </div>
-                ))}
+              <div className="xy-bento-single-image">
+                {commodities[0] && (
+                  <img src={commodities[0].commodityAvatar} alt="" onClick={(e) => { e.stopPropagation(); navigate(`/commodity/${commodities[0].id}`) }} />
+                )}
               </div>
             </div>
 
-            {/* 手机数码 */}
+            {/* 右侧上 - 手机数码（跨1-2行） */}
             <div 
-              className="xy-bento-card"
-              style={{ background: bentoSections[2].bg }}
+              className="xy-bento-card xy-bento-card-right"
+              style={{ background: bentoSections[2].bg, gridColumn: 3, gridRow: '1 / 3' }}
               onClick={() => openCategory(1)}
             >
               <div className="xy-bento-card-header">
@@ -313,7 +320,7 @@ const Home = () => {
                 <span className="xy-bento-subtitle">{bentoSections[2].subtitle}</span>
               </div>
               <div className="xy-bento-products">
-                {getProductsForSection(1).map((item, i) => (
+                {(getProductsForSection(1).length > 0 ? getProductsForSection(1) : commodities.slice(0, 3)).map((item, i) => (
                   <div key={i} className="xy-bento-product" onClick={(e) => { e.stopPropagation(); navigate(`/commodity/${item.id}`) }}>
                     <img src={item.commodityAvatar} alt="" />
                     <span className="xy-bento-price">¥{Math.floor(Number(item.price))}</span>
@@ -322,10 +329,10 @@ const Home = () => {
               </div>
             </div>
 
-            {/* 图书教材 */}
+            {/* 右侧下 - 图书教材（跨3-4行） */}
             <div 
-              className="xy-bento-card"
-              style={{ background: bentoSections[3].bg }}
+              className="xy-bento-card xy-bento-card-right"
+              style={{ background: bentoSections[3].bg, gridColumn: 3, gridRow: '3 / 5' }}
               onClick={() => openCategory(3)}
             >
               <div className="xy-bento-card-header">
@@ -336,28 +343,6 @@ const Home = () => {
               </div>
               <div className="xy-bento-products">
                 {getProductsForSection(3).map((item, i) => (
-                  <div key={i} className="xy-bento-product" onClick={(e) => { e.stopPropagation(); navigate(`/commodity/${item.id}`) }}>
-                    <img src={item.commodityAvatar} alt="" />
-                    <span className="xy-bento-price">¥{Math.floor(Number(item.price))}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 省钱好物 */}
-            <div 
-              className="xy-bento-card"
-              style={{ background: bentoSections[4].bg }}
-              onClick={() => openCategory(undefined, { sortField: 'price', sortOrder: 'ascend' })}
-            >
-              <div className="xy-bento-card-header">
-                <span className="xy-bento-tag" style={{ background: bentoSections[4].tagBg }}>
-                  {bentoSections[4].title}
-                </span>
-                <span className="xy-bento-subtitle">{bentoSections[4].subtitle}</span>
-              </div>
-              <div className="xy-bento-products">
-                {getProductsForSection(undefined, 'price').map((item, i) => (
                   <div key={i} className="xy-bento-product" onClick={(e) => { e.stopPropagation(); navigate(`/commodity/${item.id}`) }}>
                     <img src={item.commodityAvatar} alt="" />
                     <span className="xy-bento-price">¥{Math.floor(Number(item.price))}</span>
@@ -449,6 +434,17 @@ const Home = () => {
         {/* 分割线 */}
         <div className="dock-divider" />
 
+        {/* AI助手 */}
+        <Tooltip title="AI助手" placement="left">
+          <div className="dock-item dock-ai" onClick={() => setShowAiChat(!showAiChat)}>
+            <RobotOutlined className="dock-icon" />
+            <span className="dock-label">AI</span>
+          </div>
+        </Tooltip>
+
+        {/* 分割线 */}
+        <div className="dock-divider" />
+
         {/* 反馈 */}
         <Tooltip title="意见反馈" placement="left">
           <div className="dock-item" onClick={() => navigate('/feedback')}>
@@ -473,6 +469,85 @@ const Home = () => {
           </>
         )}
       </div>
+
+      {/* AI聊天框 */}
+      {showAiChat && (
+        <div className="ai-chat-box">
+          <div className="ai-chat-header">
+            <RobotOutlined />
+            <span>AI助手</span>
+            <CloseOutlined className="ai-chat-close" onClick={() => setShowAiChat(false)} />
+          </div>
+          <div className="ai-chat-messages">
+            {aiMessages.map((msg, i) => (
+              <div key={i} className={`ai-chat-message ${msg.role}`}>
+                {msg.role === 'ai' && <Avatar size={24} icon={<RobotOutlined />} style={{ background: '#FF6B00' }} />}
+                <div className="ai-chat-bubble">{msg.content}</div>
+                {msg.role === 'user' && <Avatar size={24} icon={<UserOutlined />} />}
+              </div>
+            ))}
+            {aiLoading && (
+              <div className="ai-chat-message ai">
+                <Avatar size={24} icon={<RobotOutlined />} style={{ background: '#FF6B00' }} />
+                <div className="ai-chat-bubble"><LoadingOutlined /> 思考中...</div>
+              </div>
+            )}
+          </div>
+          <div className="ai-chat-input">
+            <Input
+              placeholder="输入你的问题..."
+              value={aiMessage}
+              onChange={(e) => setAiMessage(e.target.value)}
+              disabled={aiLoading}
+              onPressEnter={async () => {
+                if (aiMessage.trim() && !aiLoading) {
+                  if (!token) {
+                    message.warning('请先登录后再使用AI助手')
+                    return
+                  }
+                  const userMsg = aiMessage.trim()
+                  setAiMessages(prev => [...prev, { role: 'user', content: userMsg }])
+                  setAiMessage('')
+                  setAiLoading(true)
+                  try {
+                    const res: any = await aiApi.add({ userInputText: userMsg })
+                    setAiMessages(prev => [...prev, { role: 'ai', content: res?.aiGenerateText || '抱歉，我暂时无法回答这个问题。' }])
+                  } catch {
+                    setAiMessages(prev => [...prev, { role: 'ai', content: '抱歉，请求失败，请稍后再试。' }])
+                  } finally {
+                    setAiLoading(false)
+                  }
+                }
+              }}
+            />
+            <Button 
+              type="primary" 
+              icon={<SendOutlined />}
+              loading={aiLoading}
+              onClick={async () => {
+                if (aiMessage.trim() && !aiLoading) {
+                  if (!token) {
+                    message.warning('请先登录后再使用AI助手')
+                    return
+                  }
+                  const userMsg = aiMessage.trim()
+                  setAiMessages(prev => [...prev, { role: 'user', content: userMsg }])
+                  setAiMessage('')
+                  setAiLoading(true)
+                  try {
+                    const res: any = await aiApi.add({ userInputText: userMsg })
+                    setAiMessages(prev => [...prev, { role: 'ai', content: res?.aiGenerateText || '抱歉，我暂时无法回答这个问题。' }])
+                  } catch {
+                    setAiMessages(prev => [...prev, { role: 'ai', content: '抱歉，请求失败，请稍后再试。' }])
+                  } finally {
+                    setAiLoading(false)
+                  }
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

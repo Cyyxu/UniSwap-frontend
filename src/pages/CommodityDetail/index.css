@@ -101,15 +101,15 @@
 
 /* 左侧商品图片 */
 .xy-detail-image {
-  align-self: center;
+  align-self: flex-start;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
 }
 
 .xy-main-image {
   width: 100%;
-  max-height: 500px;
+  height: auto;
   object-fit: contain;
   border-radius: 12px;
 }

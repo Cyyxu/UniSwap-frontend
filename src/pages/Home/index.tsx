@@ -23,17 +23,28 @@ import {
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { commodityApi, Commodity } from '../../api/commodity'
+import { commodityTypeApi, CommodityType } from '../../api/commodityType'
 import { useAuthStore } from '../../store/authStore'
 import { useCartStore } from '../../store/cartStore'
 import { userApi } from '../../api/user'
 import { aiApi } from '../../api/ai'
 import './index.css'
 
+// 分类图标映射
+const categoryIcons: Record<string, string> = {
+  '数码': '📱', '电脑': '💻', '箱包': '👜', '运动': '🏃',
+  '教材': '📚', '考研': '📖', '装备': '🎮', '账号': '🎯',
+  '个护': '💄', '香水': '🌸', '家电': '🏠', '家装': '🛋️',
+  '艺术': '🎨', '手工': '✂️', '零食': '🍪', '特产': '🎁',
+  '户外': '⛺', '健身': '💪', '闲置': '📦', '转让': '🔄',
+}
+
 const Home = () => {
   const navigate = useNavigate()
   const { token, user, logout } = useAuthStore()
   const totalCount = useCartStore((s) => s.totalCount)
   const [commodities, setCommodities] = useState<Commodity[]>([])
+  const [categories, setCategories] = useState<CommodityType[]>([])
   const [searchValue, setSearchValue] = useState('')
   const [showBackTop, setShowBackTop] = useState(false)
   const [showAiChat, setShowAiChat] = useState(false)
@@ -45,6 +56,7 @@ const Home = () => {
 
   useEffect(() => {
     loadCommodities()
+    loadCategories()
     
     // 监听滚动，控制"回到顶部"按钮显示
     const handleScroll = () => {
@@ -53,6 +65,15 @@ const Home = () => {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  const loadCategories = async () => {
+    try {
+      const list = await commodityTypeApi.getList()
+      setCategories(list)
+    } catch (error) {
+      console.error('加载分类失败', error)
+    }
+  }
 
   const loadCommodities = async () => {
     try {
@@ -63,19 +84,11 @@ const Home = () => {
     }
   }
 
-  // 分类数据 - 闲鱼风格
-  const categories = [
-    { id: 1, name: '手机', icon: '📱', sub: ['数码', '电脑'] },
-    { id: 2, name: '服饰', icon: '👔', sub: ['箱包', '运动'] },
-    { id: 3, name: '图书', icon: '📚', sub: ['教材', '考研'] },
-    { id: 5, name: '游戏', icon: '🎮', sub: ['装备', '账号'] },
-    { id: 6, name: '美妆', icon: '💄', sub: ['个护', '香水'] },
-    { id: 7, name: '家具', icon: '🪑', sub: ['家电', '家装'] },
-    { id: 8, name: '乐器', icon: '🎸', sub: ['艺术', '手工'] },
-    { id: 9, name: '食品', icon: '🍜', sub: ['零食', '特产'] },
-    { id: 4, name: '运动', icon: '⚽', sub: ['户外', '健身'] },
-    { id: 10, name: '其他', icon: '📦', sub: ['闲置', '转让'] },
-  ]
+  // 根据分类名称获取typeId
+  const getTypeIdByName = (name: string) => {
+    const cat = categories.find(c => c.typeName === name)
+    return cat?.id
+  }
 
   // Bento Grid 卡片配置 - 闲鱼风格
   const bentoSections = [
@@ -92,53 +105,44 @@ const Home = () => {
     },
     {
       id: 'clothes',
-      title: '衣橱捡漏',
-      subtitle: '时尚美衣低价淘',
+      title: '箱包',
+      subtitle: '时尚好物低价淘',
       bg: '#FFF5F5',
       textColor: '#333',
       tagBg: '#FF6B6B',
-      typeId: 2,
+      typeName: '箱包',
       products: [] as Commodity[],
     },
     {
       id: 'digital',
-      title: '手机数码',
+      title: '数码',
       subtitle: '热门装备省心入',
       bg: '#F0F7FF',
       textColor: '#333',
       tagBg: '#4DABF7',
-      typeId: 1,
+      typeName: '数码',
       products: [] as Commodity[],
     },
     {
       id: 'acg',
-      title: '图书教材',
+      title: '教材',
       subtitle: '知识好物随手得',
       bg: '#F0FFF4',
       textColor: '#333',
       tagBg: '#51CF66',
-      typeId: 3,
-      products: [] as Commodity[],
-    },
-    {
-      id: 'discount',
-      title: '省钱好物',
-      subtitle: '超值优惠放心购',
-      bg: '#FFF0F6',
-      textColor: '#333',
-      tagBg: '#F06595',
-      typeId: undefined,
-      sortField: 'price',
-      sortOrder: 'ascend',
+      typeName: '教材',
       products: [] as Commodity[],
     },
   ]
 
   // 获取各分类商品预览
-  const getProductsForSection = (typeId?: number, sortField?: string) => {
+  const getProductsForSection = (typeName?: string, sortField?: string) => {
     let filtered = [...commodities]
-    if (typeId) {
-      filtered = filtered.filter(c => c.commodityTypeId === typeId)
+    if (typeName) {
+      const typeId = getTypeIdByName(typeName)
+      if (typeId) {
+        filtered = filtered.filter(c => c.commodityTypeId === typeId)
+      }
     }
     if (sortField === 'price') {
       filtered.sort((a, b) => Number(a.price) - Number(b.price))
@@ -261,20 +265,27 @@ const Home = () => {
       <div className="xy-main">
         {/* 左侧分类栏 */}
         <div className="xy-sidebar">
-          {categories.map(cat => (
-            <div 
-              key={cat.id} 
-              className="xy-category-item"
-              onClick={() => openCategory(cat.id)}
-            >
-              <span className="xy-cat-icon">{cat.icon}</span>
-              <span className="xy-cat-name">{cat.name}</span>
-              <span className="xy-cat-divider">/</span>
-              {cat.sub.map((s, i) => (
-                <span key={i} className="xy-cat-sub">{s}{i < cat.sub.length - 1 ? ' / ' : ''}</span>
-              ))}
-            </div>
-          ))}
+          {/* 将分类两两分组显示 */}
+          {Array.from({ length: Math.ceil(categories.length / 2) }, (_, i) => {
+            const cat1 = categories[i * 2]
+            const cat2 = categories[i * 2 + 1]
+            return (
+              <div 
+                key={cat1?.id || i} 
+                className="xy-category-item"
+                onClick={() => openCategory(cat1?.id)}
+              >
+                <span className="xy-cat-icon">{categoryIcons[cat1?.typeName] || '📦'}</span>
+                <span className="xy-cat-name">{cat1?.typeName}</span>
+                {cat2 && (
+                  <>
+                    <span className="xy-cat-divider">/</span>
+                    <span className="xy-cat-sub" onClick={(e) => { e.stopPropagation(); openCategory(cat2.id) }}>{cat2.typeName}</span>
+                  </>
+                )}
+              </div>
+            )
+          })}
         </div>
 
         {/* 中间 Bento Grid 区域 */}
@@ -293,17 +304,17 @@ const Home = () => {
                 <div className="xy-bento-main-action">去看看 &gt;</div>
               </div>
               <div className="xy-bento-main-images-grid">
-                {commodities.slice(0, 4).map((item, i) => (
-                  <img key={i} src={item.commodityAvatar} alt="" onClick={(e) => { e.stopPropagation(); navigate(`/commodity/${item.id}`) }} />
-                ))}
+                {commodities[0] && (
+                  <img src={commodities[0].commodityAvatar} alt="" onClick={(e) => { e.stopPropagation(); navigate(`/commodity/${commodities[0].id}`) }} />
+                )}
               </div>
             </div>
 
-            {/* 中间 - 衣橱捡漏（跨4行，单张大图铺满） */}
+            {/* 中间 - 箱包（跨4行，单张大图铺满） */}
             <div 
               className="xy-bento-card xy-bento-card-center"
               style={{ background: bentoSections[1].bg, gridColumn: 2, gridRow: '1 / 5' }}
-              onClick={() => openCategory(2)}
+              onClick={() => openCategory(getTypeIdByName('箱包'))}
             >
               <div className="xy-bento-card-header">
                 <span className="xy-bento-tag" style={{ background: bentoSections[1].tagBg }}>
@@ -318,11 +329,11 @@ const Home = () => {
               </div>
             </div>
 
-            {/* 右侧上 - 手机数码（跨1-2行） */}
+            {/* 右侧上 - 数码（跨1-2行） */}
             <div 
               className="xy-bento-card xy-bento-card-right"
               style={{ background: bentoSections[2].bg, gridColumn: 3, gridRow: '1 / 3' }}
-              onClick={() => openCategory(1)}
+              onClick={() => openCategory(getTypeIdByName('数码'))}
             >
               <div className="xy-bento-card-header">
                 <span className="xy-bento-tag" style={{ background: bentoSections[2].tagBg }}>
@@ -331,7 +342,7 @@ const Home = () => {
                 <span className="xy-bento-subtitle">{bentoSections[2].subtitle}</span>
               </div>
               <div className="xy-bento-products">
-                {(getProductsForSection(1).length > 0 ? getProductsForSection(1) : commodities.slice(0, 3)).map((item, i) => (
+                {(getProductsForSection('数码').length > 0 ? getProductsForSection('数码') : commodities.slice(0, 3)).map((item, i) => (
                   <div key={i} className="xy-bento-product" onClick={(e) => { e.stopPropagation(); navigate(`/commodity/${item.id}`) }}>
                     <img src={item.commodityAvatar} alt="" />
                     <span className="xy-bento-price">¥{Math.floor(Number(item.price))}</span>
@@ -340,11 +351,11 @@ const Home = () => {
               </div>
             </div>
 
-            {/* 右侧下 - 图书教材（跨3-4行） */}
+            {/* 右侧下 - 教材（跨3-4行） */}
             <div 
               className="xy-bento-card xy-bento-card-right"
               style={{ background: bentoSections[3].bg, gridColumn: 3, gridRow: '3 / 5' }}
-              onClick={() => openCategory(3)}
+              onClick={() => openCategory(getTypeIdByName('教材'))}
             >
               <div className="xy-bento-card-header">
                 <span className="xy-bento-tag" style={{ background: bentoSections[3].tagBg }}>
@@ -353,7 +364,7 @@ const Home = () => {
                 <span className="xy-bento-subtitle">{bentoSections[3].subtitle}</span>
               </div>
               <div className="xy-bento-products">
-                {getProductsForSection(3).map((item, i) => (
+                {(getProductsForSection('教材').length > 0 ? getProductsForSection('教材') : commodities.slice(0, 3)).map((item, i) => (
                   <div key={i} className="xy-bento-product" onClick={(e) => { e.stopPropagation(); navigate(`/commodity/${item.id}`) }}>
                     <img src={item.commodityAvatar} alt="" />
                     <span className="xy-bento-price">¥{Math.floor(Number(item.price))}</span>

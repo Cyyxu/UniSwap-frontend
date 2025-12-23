@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Layout as AntLayout, Menu, Avatar, Dropdown, Button } from 'antd'
+import { Layout as AntLayout, Menu, Avatar, Dropdown, Button, Badge } from 'antd'
 import {
   HomeOutlined,
   ShoppingOutlined,
@@ -12,10 +12,12 @@ import {
   LogoutOutlined,
   SettingOutlined,
   DashboardOutlined,
+  ShoppingCartOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '../../store/authStore'
 import { useEffect } from 'react'
 import { userApi } from '../../api/user'
+import { useCartStore } from '../../store/cartStore'
 import FloatingDock from '../FloatingDock'
 import './index.css'
 
@@ -25,6 +27,7 @@ const Layout = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { token, user, setUser, logout } = useAuthStore()
+  const totalCount = useCartStore((s) => s.totalCount)
 
   useEffect(() => {
     if (token && !user) {
@@ -109,6 +112,15 @@ const Layout = () => {
           />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <Button
+            type="text"
+            onClick={() => navigate(token ? '/cart' : '/login')}
+            style={{ padding: 0 }}
+          >
+            <Badge count={totalCount} size="small" overflowCount={99}>
+              <ShoppingCartOutlined style={{ fontSize: 20, color: '#333' }} />
+            </Badge>
+          </Button>
           {token ? (
             <>
               <Button 

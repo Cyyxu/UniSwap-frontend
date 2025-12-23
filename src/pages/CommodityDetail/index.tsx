@@ -10,12 +10,16 @@ import {
   EyeOutlined,
   EnvironmentOutlined,
   SafetyCertificateOutlined,
-  LeftOutlined
+  ShoppingCartOutlined,
+  LeftOutlined,
+  LoadingOutlined
 } from '@ant-design/icons'
 import { commodityApi, Commodity } from '../../api/commodity'
 import { favoritesApi } from '../../api/favorites'
 import { scoreApi } from '../../api/score'
+import { messageApi } from '../../api/message'
 import { useAuthStore } from '../../store/authStore'
+import { useCartStore } from '../../store/cartStore'
 import { formatDateTime, getRelativeTime } from '../../utils/format'
 import './index.css'
 
@@ -23,6 +27,7 @@ const CommodityDetail = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { token } = useAuthStore()
+  const addItem = useCartStore((s) => s.addItem)
   const [commodity, setCommodity] = useState<Commodity | null>(null)
   const [isFavorited, setIsFavorited] = useState(false)
   const [favoriteId, setFavoriteId] = useState<number | null>(null)
@@ -31,12 +36,33 @@ const CommodityDetail = () => {
   const [myScoreId, setMyScoreId] = useState<number | null>(null)
   const [scoreList, setScoreList] = useState<any[]>([])
   const [myComment, setMyComment] = useState<string>('')
+  const [chatLoading, setChatLoading] = useState(false)
 
   useEffect(() => {
     if (id) {
       loadDetail()
     }
   }, [id])
+
+  const handleAddToCart = () => {
+    if (!token) {
+      message.warning('请先登录')
+      navigate('/login')
+      return
+    }
+    if (!commodity) return
+
+    addItem(
+      {
+        commodityId: commodity.id,
+        commodityName: commodity.commodityName,
+        commodityAvatar: commodity.commodityAvatar,
+        price: Number(commodity.price) || 0,
+      },
+      1
+    )
+    message.success('已加入购物车')
+  }
 
   const loadDetail = async () => {
     try {
@@ -79,7 +105,7 @@ const CommodityDetail = () => {
   const checkFavoriteStatus = async (commodityId: number) => {
     if (!token) return
     try {
-      const res = await favoritesApi.getByCommodityId(commodityId)
+      const res: any = await favoritesApi.getByCommodityId(commodityId)
       if (res?.records && res.records.length > 0) {
         const favorite = res.records[0]
         setIsFavorited(true)
@@ -105,8 +131,8 @@ const CommodityDetail = () => {
 
   const loadAverageScore = async (commodityId: number) => {
     try {
-      const score = await scoreApi.getAverage(commodityId)
-      setAverageScore(score || 0)
+      const score: any = await scoreApi.getAverage(commodityId)
+      setAverageScore(Number(score) || 0)
     } catch (error) {
       console.error('加载平均评分失败', error)
     }
@@ -115,7 +141,7 @@ const CommodityDetail = () => {
   const loadMyScore = async (commodityId: number) => {
     if (!token) return
     try {
-      const res = await scoreApi.getMyList({ commodityId, current: 1, pageSize: 1 })
+      const res: any = await scoreApi.getMyList({ commodityId, current: 1, pageSize: 1 })
       if (res?.records && res.records.length > 0) {
         const score = res.records[0]
         setMyScore(score.score)
@@ -128,7 +154,7 @@ const CommodityDetail = () => {
 
   const loadScoreList = async (commodityId: number) => {
     try {
-      const res = await scoreApi.getList({ commodityId, current: 1, pageSize: 10 })
+      const res: any = await scoreApi.getList({ commodityId, current: 1, pageSize: 10 })
       setScoreList(res?.records || [])
     } catch (error) {
       console.error('加载评分列表失败', error)
@@ -158,8 +184,8 @@ const CommodityDetail = () => {
         message.success('评价已更新')
       } else {
         // 新增评分
-        const id = await scoreApi.add({ commodityId: commodity.id, score: myScore, comment: myComment || undefined })
-        setMyScoreId(id)
+        const id: any = await scoreApi.add({ commodityId: commodity.id, score: myScore, comment: myComment || undefined })
+        setMyScoreId(Number(id) || null)
         message.success('评价成功')
       }
       // 刷新评分数据
@@ -169,7 +195,7 @@ const CommodityDetail = () => {
     }
   }
 
-  const handleContactSeller = () => {
+  const handleContactSeller = async () => {
     if (!token) {
       message.warning('请先登录')
       navigate('/login')
@@ -177,8 +203,17 @@ const CommodityDetail = () => {
     }
     if (!commodity) return
     
-    // 跳转到私信页面，并通过URL参数传递卖家ID
-    navigate(`/message?recipientId=${commodity.adminId}`)
+    setChatLoading(true)
+    try {
+      // 调用接口初始化聊天室，与商家建立联系
+      await messageApi.startChat(commodity.adminId, commodity.id)
+      // 跳转到私信页面
+      navigate(`/message?recipientId=${commodity.adminId}`)
+    } catch (error: any) {
+      message.error(error.message || '建立联系失败，请稍后再试')
+    } finally {
+      setChatLoading(false)
+    }
   }
 
   const handleToggleFavorite = async () => {
@@ -200,10 +235,10 @@ const CommodityDetail = () => {
         loadDetail()
       } else {
         // 添加收藏
-        const id = await favoritesApi.add({ commodityId: commodity.id })
+        const id: any = await favoritesApi.add({ commodityId: commodity.id })
         message.success('已添加到收藏')
         setIsFavorited(true)
-        setFavoriteId(id)
+        setFavoriteId(Number(id) || null)
         // 刷新商品详情以更新收藏数
         loadDetail()
       }
@@ -318,10 +353,19 @@ const CommodityDetail = () => {
           <div className="xy-action-bar">
             <Button 
               className="xy-chat-btn"
-              icon={<MessageOutlined />}
+              icon={chatLoading ? <LoadingOutlined /> : <MessageOutlined />}
               onClick={handleContactSeller}
+              loading={chatLoading}
             >
               聊一聊
+            </Button>
+            <Button
+              className="xy-buy-btn"
+              icon={<ShoppingCartOutlined />}
+              onClick={handleAddToCart}
+              disabled={commodity.commodityInventory === 0}
+            >
+              加入购物车
             </Button>
             <Button 
               type="primary"

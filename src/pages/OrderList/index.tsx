@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Card, Table, Tag, Pagination } from 'antd'
 import { orderApi, Order, OrderQuery } from '../../api/order'
 import type { ColumnsType } from 'antd/es/table'
-import dayjs from 'dayjs'
 
 const OrderList = () => {
   const [loading, setLoading] = useState(false)
@@ -77,13 +76,18 @@ const OrderList = () => {
     },
     {
       title: '订单状态',
-      dataIndex: 'orderStatus',
-      key: 'orderStatus',
+      dataIndex: 'status',
+      key: 'status',
       width: 100,
       align: 'center',
       render: (status) => {
-        const statusText = status === 'Yundefined' ? '未定义' : status
-        return <Tag>{statusText}</Tag>
+        const statusMap: Record<string, { text: string; color: string }> = {
+          'active': { text: '活跃', color: 'green' },
+          'completed': { text: '已完成', color: 'default' },
+          'cancelled': { text: '已取消', color: 'red' },
+        }
+        const statusInfo = statusMap[status] || { text: '未知', color: 'default' }
+        return <Tag color={statusInfo.color}>{statusInfo.text}</Tag>
       },
     },
   ]

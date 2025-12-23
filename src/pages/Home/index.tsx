@@ -18,11 +18,13 @@ import {
   VerticalAlignTopOutlined,
   SendOutlined,
   CloseOutlined,
-  LoadingOutlined
+  LoadingOutlined,
+  ShoppingCartOutlined
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { commodityApi, Commodity } from '../../api/commodity'
 import { useAuthStore } from '../../store/authStore'
+import { useCartStore } from '../../store/cartStore'
 import { userApi } from '../../api/user'
 import { aiApi } from '../../api/ai'
 import './index.css'
@@ -30,6 +32,7 @@ import './index.css'
 const Home = () => {
   const navigate = useNavigate()
   const { token, user, logout } = useAuthStore()
+  const totalCount = useCartStore((s) => s.totalCount)
   const [commodities, setCommodities] = useState<Commodity[]>([])
   const [searchValue, setSearchValue] = useState('')
   const [showBackTop, setShowBackTop] = useState(false)
@@ -213,6 +216,14 @@ const Home = () => {
           </div>
 
           <div className="xy-navbar-right">
+            <div
+              className="xy-nav-item"
+              onClick={() => navigate(token ? '/cart' : '/login')}
+            >
+              <Badge count={totalCount} size="small" overflowCount={99}>
+                <ShoppingCartOutlined className="xy-nav-icon" style={{ fontSize: 24 }} />
+              </Badge>
+            </div>
             {token ? (
               <>
                 <div className="xy-nav-item" onClick={() => navigate('/message')}>
@@ -281,9 +292,9 @@ const Home = () => {
                 <span className="xy-bento-main-badge">{bentoSections[0].badge}</span>
                 <div className="xy-bento-main-action">去看看 &gt;</div>
               </div>
-              <div className="xy-bento-main-images">
-                {commodities.slice(0, 2).map((item, i) => (
-                  <img key={i} src={item.commodityAvatar} alt="" />
+              <div className="xy-bento-main-images-grid">
+                {commodities.slice(0, 4).map((item, i) => (
+                  <img key={i} src={item.commodityAvatar} alt="" onClick={(e) => { e.stopPropagation(); navigate(`/commodity/${item.id}`) }} />
                 ))}
               </div>
             </div>

@@ -186,7 +186,7 @@ const ChatRoom = () => {
       
       // 滚动到底部
       setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+        messagesEndRef.current?.scrollIntoView({ block: 'nearest', behavior: 'auto' })
       }, 100)
     } catch (error) {
       console.error('加载聊天记录失败:', error)
@@ -395,6 +395,11 @@ const ChatRoom = () => {
                         <div className="message-content">{msg.content}</div>
                         <div className="message-time">
                           {dayjs(msg.createTime).format('HH:mm:ss')}
+                          {msg.senderId === user?.id && (
+                            <span className={`message-status ${msg.alreadyRead === 1 ? 'read' : 'unread'}`}>
+                              {msg.alreadyRead === 1 ? '已读' : '未读'}
+                            </span>
+                          )}
                         </div>
                         {/* 删除按钮 - 只对自己发送的消息显示 */}
                         {msg.senderId === user?.id && (

@@ -45,14 +45,14 @@ const UserCenter = () => {
     },
     {
       title: '总金额',
-      dataIndex: 'totalAmount',
+      dataIndex: 'paymentAmount',
       key: 'totalAmount',
       render: (amount) => `¥${amount}`,
     },
     {
-      title: '订单状态',
-      dataIndex: 'orderStatus',
-      key: 'orderStatus',
+      title: '支付状态',
+      dataIndex: 'payStatus',
+      key: 'payStatus',
       render: (status) => {
         const statusMap: Record<number, { text: string; color: string }> = {
           0: { text: '待支付', color: 'orange' },

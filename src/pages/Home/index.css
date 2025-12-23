@@ -280,6 +280,30 @@
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* 主推卡片图片网格 - 2x2布局 */
+.xy-bento-main-images-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 8px;
+  flex: 1;
+  margin-top: 12px;
+}
+
+.xy-bento-main-images-grid img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.xy-bento-main-images-grid img:hover {
+  transform: scale(1.05);
+}
+
 /* 小分类卡片 */
 .xy-bento-card {
   border-radius: 12px;

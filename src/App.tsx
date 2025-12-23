@@ -11,6 +11,7 @@ const Home = lazy(() => import('./pages/Home'))
 const CommodityList = lazy(() => import('./pages/CommodityList'))
 const CommodityDetail = lazy(() => import('./pages/CommodityDetail'))
 const CommodityManage = lazy(() => import('./pages/CommodityManage'))
+const Cart = lazy(() => import('./pages/Cart'))
 const OrderList = lazy(() => import('./pages/OrderList'))
 const PostList = lazy(() => import('./pages/PostList'))
 const PostDetail = lazy(() => import('./pages/PostDetail'))
@@ -59,6 +60,7 @@ function App() {
             <Route path="commodity" element={<CommodityList />} />
             <Route path="commodity/:id" element={<CommodityDetail />} />
             <Route path="commodity-manage" element={<PrivateRoute><CommodityManage /></PrivateRoute>} />
+            <Route path="cart" element={<PrivateRoute><Cart /></PrivateRoute>} />
             <Route path="order" element={<PrivateRoute><OrderList /></PrivateRoute>} />
             <Route path="post" element={<PostList />} />
             <Route path="post/:id" element={<PostDetail />} />

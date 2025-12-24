@@ -47,19 +47,19 @@ const Register = () => {
           <Form.Item
             name="userName"
           >
-          <Input
-              prefix={<UserOutlined />}
-              placeholder="昵称（可选）"
-          />
+            <Input
+              prefix={<UserOutlined style={{ color: '#bfbfbf' }} />}
+              placeholder="昵称（选填，用于展示）"
+            />
           </Form.Item>
           <Form.Item
             name="userAccount"
             rules={[{ required: true, message: '请输入账号!' }]}
           >
-          <Input
+            <Input
               prefix={<UserOutlined />}
-              placeholder="账号"
-          />
+              placeholder="账号（用于登录）"
+            />
           </Form.Item>
           <Form.Item
             name="userPassword"

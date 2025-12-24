@@ -1,11 +1,25 @@
-import { useMemo, useState } from 'react'
-import { Button, Card, Checkbox, Divider, Empty, Image, InputNumber, Space, Table, Typography, message } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  Button,
+  Card,
+  Checkbox,
+  Divider,
+  Empty,
+  Image,
+  InputNumber,
+  Space,
+  Table,
+  Typography,
+  message,
+  Spin,
+} from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { DeleteOutlined } from '@ant-design/icons'
+import { DeleteOutlined, ShoppingCartOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useCartStore } from '../../store/cartStore'
 import { commodityApi } from '../../api/commodity'
 import { useAuthStore } from '../../store/authStore'
+import { CartItem } from '../../api/cart'
 
 const { Text } = Typography
 
@@ -14,22 +28,45 @@ const Cart = () => {
   const { token } = useAuthStore()
   const {
     items,
-    totalCount,
-    totalAmount,
-    selectedCount,
-    selectedAmount,
+    loading,
+    totalQuantity,
+    finalAmount,
+    fetchCart,
     updateQuantity,
     removeItem,
+    removeBatch,
     toggleSelected,
     setAllSelected,
-    clear,
     clearSelected,
   } = useCartStore()
 
   const [submitting, setSubmitting] = useState(false)
 
-  const allSelected = useMemo(() => items.length > 0 && items.every((it) => it.selected), [items])
-  const indeterminate = useMemo(() => items.some((it) => it.selected) && !allSelected, [items, allSelected])
+  // 计算已选数量和金额
+  const selectedItems = useMemo(() => items.filter((it) => it.selected), [items])
+  const selectedCount = useMemo(
+    () => selectedItems.reduce((sum, it) => sum + it.quantity, 0),
+    [selectedItems]
+  )
+  const selectedAmount = useMemo(
+    () => selectedItems.reduce((sum, it) => sum + it.currentPrice * it.quantity, 0),
+    [selectedItems]
+  )
+
+  useEffect(() => {
+    if (token) {
+      fetchCart()
+    }
+  }, [token])
+
+  const allSelected = useMemo(
+    () => items.length > 0 && items.every((it) => it.selected),
+    [items]
+  )
+  const indeterminate = useMemo(
+    () => items.some((it) => it.selected) && !allSelected,
+    [items, allSelected]
+  )
 
   const handleCheckout = async () => {
     const selectedItems = items.filter((it) => it.selected)
@@ -46,10 +83,13 @@ const Cart = () => {
     setSubmitting(true)
     try {
       for (const it of selectedItems) {
-        await commodityApi.purchase({ commodityId: it.commodityId, buyNumber: it.quantity })
+        await commodityApi.purchase({
+          commodityId: it.commodityId,
+          buyNumber: it.quantity,
+        })
       }
       message.success('结算成功')
-      clearSelected()
+      await clearSelected()
       navigate('/order')
     } catch (e: any) {
       message.error(e?.message || '结算失败')
@@ -58,7 +98,7 @@ const Cart = () => {
     }
   }
 
-  const columns: ColumnsType<(typeof items)[number]> = [
+  const columns: ColumnsType<CartItem> = [
     {
       title: (
         <Checkbox
@@ -72,15 +112,27 @@ const Cart = () => {
       dataIndex: 'selected',
       width: 90,
       render: (_v, record) => (
-        <Checkbox checked={record.selected} onChange={() => toggleSelected(record.commodityId)} />
+        <Checkbox
+          checked={record.selected}
+          onChange={() => toggleSelected(record.id)}
+        />
       ),
     },
     {
       title: '商品',
       dataIndex: 'commodityName',
       render: (_v, record) => (
-        <Space>
-          <Image width={56} height={56} src={record.commodityAvatar} fallback="https://via.placeholder.com/56" />
+        <Space
+          style={{ cursor: 'pointer' }}
+          onClick={() => navigate(`/commodity/${record.commodityId}`)}
+        >
+          <Image
+            width={56}
+            height={56}
+            src={record.commodityAvatar}
+            fallback="https://via.placeholder.com/56"
+            preview={false}
+          />
           <div>
             <div>{record.commodityName}</div>
             <Text type="secondary">ID: {record.commodityId}</Text>
@@ -90,9 +142,9 @@ const Cart = () => {
     },
     {
       title: '单价',
-      dataIndex: 'price',
+      dataIndex: 'currentPrice',
       width: 120,
-      render: (v) => <Text>¥{Number(v).toFixed(2)}</Text>,
+      render: (v) => <Text>¥{(Number(v) || 0).toFixed(2)}</Text>,
     },
     {
       title: '数量',
@@ -101,8 +153,9 @@ const Cart = () => {
       render: (v, record) => (
         <InputNumber
           min={1}
+          max={record.stock || 99}
           value={v}
-          onChange={(val) => updateQuantity(record.commodityId, Number(val))}
+          onChange={(val) => updateQuantity(record.id, Number(val))}
         />
       ),
     },
@@ -110,7 +163,11 @@ const Cart = () => {
       title: '小计',
       key: 'subtotal',
       width: 140,
-      render: (_v, record) => <Text strong>¥{(record.price * record.quantity).toFixed(2)}</Text>,
+      render: (_v, record) => (
+        <Text strong style={{ color: '#FF4D4F' }}>
+          ¥{((Number(record.currentPrice) || 0) * (record.quantity || 1)).toFixed(2)}
+        </Text>
+      ),
     },
     {
       title: '操作',
@@ -121,7 +178,7 @@ const Cart = () => {
           danger
           type="link"
           icon={<DeleteOutlined />}
-          onClick={() => removeItem(record.commodityId)}
+          onClick={() => removeItem(record.id)}
         >
           移除
         </Button>
@@ -129,16 +186,38 @@ const Cart = () => {
     },
   ]
 
+  if (loading) {
+    return (
+      <Card style={{ maxWidth: 1100, margin: '0 auto', textAlign: 'center', padding: 60 }}>
+        <Spin size="large" />
+        <p style={{ marginTop: 16, color: '#999' }}>加载购物车中...</p>
+      </Card>
+    )
+  }
+
   return (
-    <Card title="购物车" style={{ maxWidth: 1100, margin: '0 auto' }}>
+    <Card
+      title={
+        <Space>
+          <ShoppingCartOutlined style={{ color: '#FF6B00' }} />
+          <span>购物车</span>
+          {totalQuantity > 0 && (
+            <Text type="secondary">（共 {totalQuantity} 件商品）</Text>
+          )}
+        </Space>
+      }
+      style={{ maxWidth: 1100, margin: '0 auto' }}
+    >
       {items.length === 0 ? (
         <Empty description="购物车为空">
-          <Button type="primary" onClick={() => navigate('/commodity')}>去逛逛</Button>
+          <Button type="primary" onClick={() => navigate('/commodity')}>
+            去逛逛
+          </Button>
         </Empty>
       ) : (
         <>
           <Table
-            rowKey="commodityId"
+            rowKey="id"
             columns={columns}
             dataSource={items}
             pagination={false}
@@ -146,25 +225,52 @@ const Cart = () => {
 
           <Divider />
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 16,
+            }}
+          >
             <Space>
-              <Button onClick={clear} danger>清空购物车</Button>
-              <Button onClick={clearSelected}>删除已选</Button>
+              <Button
+                onClick={() => {
+                  const allIds = items.map((it) => it.id)
+                  if (allIds.length > 0) removeBatch(allIds)
+                }}
+                danger
+              >
+                清空购物车
+              </Button>
+              <Button onClick={clearSelected} disabled={selectedCount === 0}>
+                删除已选
+              </Button>
             </Space>
 
             <Space size="large">
               <div>
-                <Text type="secondary">总件数：</Text>
-                <Text>{totalCount}</Text>
-                <Text type="secondary">（已选 {selectedCount}）</Text>
+                <Text type="secondary">已选 </Text>
+                <Text strong style={{ color: '#FF6B00' }}>
+                  {selectedCount}
+                </Text>
+                <Text type="secondary"> 件</Text>
               </div>
               <div>
-                <Text type="secondary">总金额：</Text>
-                <Text>¥{totalAmount.toFixed(2)}</Text>
-                <Text type="secondary">（已选）</Text>
-                <Text strong>¥{selectedAmount.toFixed(2)}</Text>
+                <Text type="secondary">合计：</Text>
+                <Text strong style={{ color: '#FF4D4F', fontSize: 20 }}>
+                  ¥{(selectedAmount || 0).toFixed(2)}
+                </Text>
               </div>
-              <Button type="primary" loading={submitting} onClick={handleCheckout}>
+              <Button
+                type="primary"
+                size="large"
+                loading={submitting}
+                onClick={handleCheckout}
+                disabled={selectedCount === 0}
+                style={{ minWidth: 120 }}
+              >
                 去结算
               </Button>
             </Space>

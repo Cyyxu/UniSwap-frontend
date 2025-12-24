@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Input, Button, Badge, Avatar, Dropdown, Tooltip, QRCode, message } from 'antd'
 import { 
   SearchOutlined, 
@@ -18,7 +18,6 @@ import {
   VerticalAlignTopOutlined,
   SendOutlined,
   CloseOutlined,
-  LoadingOutlined,
   ShoppingCartOutlined
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -27,7 +26,78 @@ import { commodityTypeApi, CommodityType } from '../../api/commodityType'
 import { useAuthStore } from '../../store/authStore'
 import { useCartStore } from '../../store/cartStore'
 import { userApi } from '../../api/user'
-import { aiApi } from '../../api/ai'
+// SSE流式聊天函数
+const streamChat = async (
+  userInputText: string,
+  onMessage: (text: string) => void,
+  onDone: (messageId?: string) => void,
+  onError: (error: string) => void
+) => {
+  const token = localStorage.getItem('token')
+  const baseURL = import.meta.env.PROD 
+    ? 'http://120.26.104.183:8109/uniswap' 
+    : '/uniswap'
+  
+  try {
+    const response = await fetch(`${baseURL}/api/llm/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token ? (token.startsWith('Bearer ') ? token : `Bearer ${token}`) : '',
+      },
+      body: JSON.stringify({ userInputText }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const reader = response.body?.getReader()
+    if (!reader) {
+      throw new Error('No reader available')
+    }
+
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        if (line.startsWith('data:')) {
+          const data = line.slice(5).trim()
+          if (!data) continue
+          
+          try {
+            const parsed = JSON.parse(data)
+            if (parsed.type === 'MESSAGE') {
+              onMessage(parsed.content || '')
+            } else if (parsed.type === 'DONE') {
+              onDone(parsed.messageId)
+              return
+            } else if (parsed.type === 'ERROR') {
+              onError(parsed.content || '请求失败')
+              return
+            }
+          } catch {
+            // 可能是纯文本消息
+            if (data !== '[DONE]') {
+              onMessage(data)
+            }
+          }
+        }
+      }
+    }
+    onDone()
+  } catch (error: any) {
+    onError(error.message || '请求失败')
+  }
+}
 import './index.css'
 
 // 分类图标映射
@@ -42,7 +112,7 @@ const categoryIcons: Record<string, string> = {
 const Home = () => {
   const navigate = useNavigate()
   const { token, user, logout } = useAuthStore()
-  const totalCount = useCartStore((s) => s.totalCount)
+  const { totalCount, fetchCart } = useCartStore()
   const [commodities, setCommodities] = useState<Commodity[]>([])
   const [categories, setCategories] = useState<CommodityType[]>([])
   const [searchValue, setSearchValue] = useState('')
@@ -50,13 +120,31 @@ const Home = () => {
   const [showAiChat, setShowAiChat] = useState(false)
   const [aiMessage, setAiMessage] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
-  const [aiMessages, setAiMessages] = useState<{role: 'user' | 'ai', content: string}[]>([
+  const [aiMessages, setAiMessages] = useState<{role: 'user' | 'ai', content: string, streaming?: boolean}[]>([
     { role: 'ai', content: '你好！我是UniSwap AI助手，有什么可以帮你的吗？' }
   ])
+  const aiMessagesRef = useRef<HTMLDivElement>(null)
+
+  // 自动滚动到底部
+  const scrollToBottom = () => {
+    if (aiMessagesRef.current) {
+      aiMessagesRef.current.scrollTop = aiMessagesRef.current.scrollHeight
+    }
+  }
+
+  // 当消息变化时自动滚动
+  useEffect(() => {
+    scrollToBottom()
+  }, [aiMessages])
 
   useEffect(() => {
     loadCommodities()
     loadCategories()
+    
+    // 登录后加载购物车
+    if (token) {
+      fetchCart()
+    }
     
     // 监听滚动，控制"回到顶部"按钮显示
     const handleScroll = () => {
@@ -238,7 +326,7 @@ const Home = () => {
                 <Button 
                   type="primary" 
                   className="xy-publish-btn"
-                  onClick={() => navigate('/commodity/publish')}
+                  onClick={() => navigate('/commodity-manage')}
                 >
                   + 发布闲置
                 </Button>
@@ -427,7 +515,7 @@ const Home = () => {
       <div className="floating-dock">
         {/* 发闲置 */}
         <Tooltip title="发布闲置" placement="left">
-          <div className="dock-item dock-publish" onClick={() => navigate('/commodity/publish')}>
+          <div className="dock-item dock-publish" onClick={() => navigate('/commodity-manage')}>
             <EditOutlined className="dock-icon" />
             <span className="dock-label">发闲置</span>
           </div>
@@ -500,20 +588,17 @@ const Home = () => {
             <span>AI助手</span>
             <CloseOutlined className="ai-chat-close" onClick={() => setShowAiChat(false)} />
           </div>
-          <div className="ai-chat-messages">
+          <div className="ai-chat-messages" ref={aiMessagesRef}>
             {aiMessages.map((msg, i) => (
               <div key={i} className={`ai-chat-message ${msg.role}`}>
                 {msg.role === 'ai' && <Avatar size={24} icon={<RobotOutlined />} style={{ background: '#FF6B00' }} />}
-                <div className="ai-chat-bubble">{msg.content}</div>
+                <div className="ai-chat-bubble">
+                  {msg.content}
+                  {msg.streaming && <span className="ai-cursor">▋</span>}
+                </div>
                 {msg.role === 'user' && <Avatar size={24} icon={<UserOutlined />} />}
               </div>
             ))}
-            {aiLoading && (
-              <div className="ai-chat-message ai">
-                <Avatar size={24} icon={<RobotOutlined />} style={{ background: '#FF6B00' }} />
-                <div className="ai-chat-bubble"><LoadingOutlined /> 思考中...</div>
-              </div>
-            )}
           </div>
           <div className="ai-chat-input">
             <Input
@@ -521,7 +606,7 @@ const Home = () => {
               value={aiMessage}
               onChange={(e) => setAiMessage(e.target.value)}
               disabled={aiLoading}
-              onPressEnter={async () => {
+              onPressEnter={() => {
                 if (aiMessage.trim() && !aiLoading) {
                   if (!token) {
                     message.warning('请先登录后再使用AI助手')
@@ -531,14 +616,47 @@ const Home = () => {
                   setAiMessages(prev => [...prev, { role: 'user', content: userMsg }])
                   setAiMessage('')
                   setAiLoading(true)
-                  try {
-                    const res: any = await aiApi.add({ userInputText: userMsg })
-                    setAiMessages(prev => [...prev, { role: 'ai', content: res?.aiGenerateText || '抱歉，我暂时无法回答这个问题。' }])
-                  } catch {
-                    setAiMessages(prev => [...prev, { role: 'ai', content: '抱歉，请求失败，请稍后再试。' }])
-                  } finally {
-                    setAiLoading(false)
-                  }
+                  // 添加一个空的AI消息用于流式显示
+                  setAiMessages(prev => [...prev, { role: 'ai', content: '', streaming: true }])
+                  
+                  streamChat(
+                    userMsg,
+                    (text) => {
+                      // 逐字更新最后一条AI消息
+                      setAiMessages(prev => {
+                        const newMsgs = [...prev]
+                        const lastMsg = newMsgs[newMsgs.length - 1]
+                        if (lastMsg && lastMsg.role === 'ai') {
+                          lastMsg.content += text
+                        }
+                        return newMsgs
+                      })
+                    },
+                    () => {
+                      // 完成时移除streaming标记
+                      setAiMessages(prev => {
+                        const newMsgs = [...prev]
+                        const lastMsg = newMsgs[newMsgs.length - 1]
+                        if (lastMsg && lastMsg.role === 'ai') {
+                          lastMsg.streaming = false
+                        }
+                        return newMsgs
+                      })
+                      setAiLoading(false)
+                    },
+                    (error) => {
+                      setAiMessages(prev => {
+                        const newMsgs = [...prev]
+                        const lastMsg = newMsgs[newMsgs.length - 1]
+                        if (lastMsg && lastMsg.role === 'ai') {
+                          lastMsg.content = `抱歉，请求失败：${error}`
+                          lastMsg.streaming = false
+                        }
+                        return newMsgs
+                      })
+                      setAiLoading(false)
+                    }
+                  )
                 }
               }}
             />
@@ -546,7 +664,7 @@ const Home = () => {
               type="primary" 
               icon={<SendOutlined />}
               loading={aiLoading}
-              onClick={async () => {
+              onClick={() => {
                 if (aiMessage.trim() && !aiLoading) {
                   if (!token) {
                     message.warning('请先登录后再使用AI助手')
@@ -556,14 +674,44 @@ const Home = () => {
                   setAiMessages(prev => [...prev, { role: 'user', content: userMsg }])
                   setAiMessage('')
                   setAiLoading(true)
-                  try {
-                    const res: any = await aiApi.add({ userInputText: userMsg })
-                    setAiMessages(prev => [...prev, { role: 'ai', content: res?.aiGenerateText || '抱歉，我暂时无法回答这个问题。' }])
-                  } catch {
-                    setAiMessages(prev => [...prev, { role: 'ai', content: '抱歉，请求失败，请稍后再试。' }])
-                  } finally {
-                    setAiLoading(false)
-                  }
+                  setAiMessages(prev => [...prev, { role: 'ai', content: '', streaming: true }])
+                  
+                  streamChat(
+                    userMsg,
+                    (text) => {
+                      setAiMessages(prev => {
+                        const newMsgs = [...prev]
+                        const lastMsg = newMsgs[newMsgs.length - 1]
+                        if (lastMsg && lastMsg.role === 'ai') {
+                          lastMsg.content += text
+                        }
+                        return newMsgs
+                      })
+                    },
+                    () => {
+                      setAiMessages(prev => {
+                        const newMsgs = [...prev]
+                        const lastMsg = newMsgs[newMsgs.length - 1]
+                        if (lastMsg && lastMsg.role === 'ai') {
+                          lastMsg.streaming = false
+                        }
+                        return newMsgs
+                      })
+                      setAiLoading(false)
+                    },
+                    (error) => {
+                      setAiMessages(prev => {
+                        const newMsgs = [...prev]
+                        const lastMsg = newMsgs[newMsgs.length - 1]
+                        if (lastMsg && lastMsg.role === 'ai') {
+                          lastMsg.content = `抱歉，请求失败：${error}`
+                          lastMsg.streaming = false
+                        }
+                        return newMsgs
+                      })
+                      setAiLoading(false)
+                    }
+                  )
                 }
               }}
             />

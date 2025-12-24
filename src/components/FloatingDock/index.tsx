@@ -29,7 +29,7 @@ const FloatingDock = () => {
   return (
     <div className="xy-floating-dock">
       {/* 发布按钮 */}
-      <div className="xy-dock-publish" onClick={() => navigate('/commodity/manage')}>
+      <div className="xy-dock-publish" onClick={() => navigate('/commodity-manage')}>
         <EditOutlined />
         <span>发布</span>
       </div>

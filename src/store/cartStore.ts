@@ -1,114 +1,135 @@
 import { create } from 'zustand'
-
-export interface CartItem {
-  commodityId: number
-  commodityName: string
-  commodityAvatar?: string
-  price: number
-  quantity: number
-  selected: boolean
-}
+import { cartApi, CartItem, CartVO } from '../api/cart'
 
 interface CartState {
   items: CartItem[]
-  totalCount: number
+  loading: boolean
+  totalQuantity: number
   totalAmount: number
-  selectedCount: number
-  selectedAmount: number
-  addItem: (item: Omit<CartItem, 'quantity' | 'selected'>, quantity?: number) => void
-  removeItem: (commodityId: number) => void
-  updateQuantity: (commodityId: number, quantity: number) => void
-  toggleSelected: (commodityId: number) => void
-  setAllSelected: (selected: boolean) => void
-  clear: () => void
-  clearSelected: () => void
+  discountAmount: number
+  finalAmount: number
+  fetchCart: () => Promise<void>
+  addItem: (commodityId: number, quantity?: number) => Promise<void>
+  removeItem: (id: number) => Promise<void>
+  removeBatch: (ids: number[]) => Promise<void>
+  updateQuantity: (id: number, quantity: number) => Promise<void>
+  toggleSelected: (id: number) => Promise<void>
+  setAllSelected: (selected: boolean) => Promise<void>
+  clearSelected: () => Promise<void>
+  reset: () => void
 }
 
-const STORAGE_KEY = 'cart'
+export const useCartStore = create<CartState>((set, get) => ({
+  items: [],
+  loading: false,
+  totalQuantity: 0,
+  totalAmount: 0,
+  discountAmount: 0,
+  finalAmount: 0,
 
-const getStoredItems = (): CartItem[] => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    const parsed = raw ? (JSON.parse(raw) as CartItem[]) : []
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
+  fetchCart: async () => {
+    set({ loading: true })
+    try {
+      const res = (await cartApi.getList()) as unknown as CartVO
+      set({
+        items: res.items || [],
+        totalQuantity: res.totalQuantity || 0,
+        totalAmount: res.totalAmount || 0,
+        discountAmount: res.discountAmount || 0,
+        finalAmount: res.finalAmount || 0,
+        loading: false,
+      })
+    } catch (error) {
+      console.error('加载购物车失败', error)
+      set({ loading: false })
+    }
+  },
 
-const persistItems = (items: CartItem[]) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
-}
+  addItem: async (commodityId, quantity = 1) => {
+    try {
+      await cartApi.add({ commodityId, quantity })
+      await get().fetchCart()
+    } catch (error) {
+      console.error('添加购物车失败', error)
+      throw error
+    }
+  },
 
-const calc = (items: CartItem[]) => {
-  const totalCount = items.reduce((sum, it) => sum + it.quantity, 0)
-  const totalAmount = items.reduce((sum, it) => sum + it.price * it.quantity, 0)
-  const selectedItems = items.filter((it) => it.selected)
-  const selectedCount = selectedItems.reduce((sum, it) => sum + it.quantity, 0)
-  const selectedAmount = selectedItems.reduce((sum, it) => sum + it.price * it.quantity, 0)
-  return { totalCount, totalAmount, selectedCount, selectedAmount }
-}
+  removeItem: async (id) => {
+    try {
+      await cartApi.remove([id])
+      await get().fetchCart()
+    } catch (error) {
+      console.error('删除购物车项失败', error)
+      throw error
+    }
+  },
 
-export const useCartStore = create<CartState>((set, get) => {
-  const initialItems = getStoredItems()
-  const initialCalc = calc(initialItems)
+  removeBatch: async (ids) => {
+    try {
+      await cartApi.remove(ids)
+      await get().fetchCart()
+    } catch (error) {
+      console.error('批量删除失败', error)
+      throw error
+    }
+  },
 
-  return {
-    items: initialItems,
-    ...initialCalc,
+  updateQuantity: async (id, quantity) => {
+    const nextQty = Math.max(1, Number(quantity) || 1)
+    try {
+      await cartApi.update({ id, quantity: nextQty })
+      await get().fetchCart()
+    } catch (error) {
+      console.error('更新数量失败', error)
+      throw error
+    }
+  },
 
-    addItem: (item, quantity = 1) => {
-      const items = [...get().items]
-      const existing = items.find((it) => it.commodityId === item.commodityId)
-      if (existing) {
-        existing.quantity += quantity
-      } else {
-        items.push({ ...item, quantity, selected: true })
+  toggleSelected: async (id) => {
+    const item = get().items.find((it) => it.id === id)
+    if (!item) return
+    try {
+      await cartApi.update({ id, selected: !item.selected })
+      await get().fetchCart()
+    } catch (error) {
+      console.error('更新选中状态失败', error)
+      throw error
+    }
+  },
+
+  setAllSelected: async (selected) => {
+    try {
+      await cartApi.selectAll(selected)
+      await get().fetchCart()
+    } catch (error) {
+      console.error('全选操作失败', error)
+      throw error
+    }
+  },
+
+  clearSelected: async () => {
+    try {
+      const selectedIds = get()
+        .items.filter((it) => it.selected)
+        .map((it) => it.id)
+      if (selectedIds.length > 0) {
+        await cartApi.remove(selectedIds)
+        await get().fetchCart()
       }
-      persistItems(items)
-      set({ items, ...calc(items) })
-    },
+    } catch (error) {
+      console.error('删除已选失败', error)
+      throw error
+    }
+  },
 
-    removeItem: (commodityId) => {
-      const items = get().items.filter((it) => it.commodityId !== commodityId)
-      persistItems(items)
-      set({ items, ...calc(items) })
-    },
-
-    updateQuantity: (commodityId, quantity) => {
-      const nextQty = Math.max(1, Number(quantity) || 1)
-      const items = [...get().items]
-      const target = items.find((it) => it.commodityId === commodityId)
-      if (!target) return
-      target.quantity = nextQty
-      persistItems(items)
-      set({ items, ...calc(items) })
-    },
-
-    toggleSelected: (commodityId) => {
-      const items = [...get().items]
-      const target = items.find((it) => it.commodityId === commodityId)
-      if (!target) return
-      target.selected = !target.selected
-      persistItems(items)
-      set({ items, ...calc(items) })
-    },
-
-    setAllSelected: (selected) => {
-      const items = get().items.map((it) => ({ ...it, selected }))
-      persistItems(items)
-      set({ items, ...calc(items) })
-    },
-
-    clear: () => {
-      persistItems([])
-      set({ items: [], ...calc([]) })
-    },
-
-    clearSelected: () => {
-      const items = get().items.filter((it) => !it.selected)
-      persistItems(items)
-      set({ items, ...calc(items) })
-    },
-  }
-})
+  reset: () => {
+    set({
+      items: [],
+      totalQuantity: 0,
+      totalAmount: 0,
+      discountAmount: 0,
+      finalAmount: 0,
+    })
+  },
+}))

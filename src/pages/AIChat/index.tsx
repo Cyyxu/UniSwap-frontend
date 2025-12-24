@@ -8,6 +8,79 @@ import './index.css'
 
 const { TextArea } = Input
 
+// SSE流式聊天函数
+const streamChat = async (
+  userInputText: string,
+  onMessage: (text: string) => void,
+  onDone: (messageId?: string) => void,
+  onError: (error: string) => void
+) => {
+  const token = localStorage.getItem('token')
+  const baseURL = import.meta.env.PROD 
+    ? 'http://120.26.104.183:8109/uniswap' 
+    : '/uniswap'
+  
+  try {
+    const response = await fetch(`${baseURL}/api/llm/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token ? (token.startsWith('Bearer ') ? token : `Bearer ${token}`) : '',
+      },
+      body: JSON.stringify({ userInputText }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const reader = response.body?.getReader()
+    if (!reader) {
+      throw new Error('No reader available')
+    }
+
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        if (line.startsWith('data:')) {
+          const data = line.slice(5).trim()
+          if (!data) continue
+          
+          try {
+            const parsed = JSON.parse(data)
+            if (parsed.type === 'MESSAGE') {
+              onMessage(parsed.content || '')
+            } else if (parsed.type === 'DONE') {
+              onDone(parsed.messageId)
+              return
+            } else if (parsed.type === 'ERROR') {
+              onError(parsed.content || '请求失败')
+              return
+            }
+          } catch {
+            // 可能是纯文本消息
+            if (data !== '[DONE]') {
+              onMessage(data)
+            }
+          }
+        }
+      }
+    }
+    onDone()
+  } catch (error: any) {
+    onError(error.message || '请求失败')
+  }
+}
+
 const AIChat = () => {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
@@ -93,16 +166,16 @@ const AIChat = () => {
     setLoading(true)
 
     const now = Date.now()
-    // 添加用户消息到列表（单独显示，不合并）
+    // 添加用户消息到列表
     const userMsg: AIMessage = {
       id: now,
       userId: 0,
       userInputText: userMessage,
-      aiGenerateText: '', // 用户消息没有AI回复
+      aiGenerateText: '',
       createTime: new Date().toISOString(),
     }
 
-    // 添加一个临时的AI消息占位符，显示加载状态
+    // 添加一个临时的AI消息占位符，用于流式显示
     const tempAiMsgId = now + 1
     const tempAiMsg: AIMessage = {
       id: tempAiMsgId,
@@ -113,48 +186,45 @@ const AIChat = () => {
     }
     setMessages((prev) => [...prev, userMsg, tempAiMsg])
 
-    try {
-      // 显示提示信息，告知用户AI正在处理
-      message.info('AI正在思考中，请稍候...', 2)
-      const startTime = Date.now()
-      const data = await aiApi.add({ userInputText: userMessage })
-      const duration = ((Date.now() - startTime) / 1000).toFixed(1)
-      
-      // 替换临时AI消息为真实回复
-      const aiMsg: AIMessage = {
-        id: data.id || tempAiMsgId,
-        userId: data.userId || 0,
-        userInputText: '', // AI消息没有用户输入
-        aiGenerateText: data.aiGenerateText || '',
-        createTime: data.createTime || new Date().toISOString(),
+    // 使用流式输出
+    streamChat(
+      userMessage,
+      (text) => {
+        // 逐字更新AI消息
+        setMessages((prev) => {
+          const newMessages = [...prev]
+          const index = newMessages.findIndex((m) => m.id === tempAiMsgId)
+          if (index !== -1) {
+            newMessages[index] = {
+              ...newMessages[index],
+              aiGenerateText: newMessages[index].aiGenerateText + text,
+            }
+          }
+          return newMessages
+        })
+      },
+      () => {
+        // 完成
+        setLoading(false)
+        message.success('AI回复完成')
+      },
+      (error) => {
+        // 错误处理
+        setMessages((prev) => {
+          const newMessages = [...prev]
+          const index = newMessages.findIndex((m) => m.id === tempAiMsgId)
+          if (index !== -1) {
+            newMessages[index] = {
+              ...newMessages[index],
+              aiGenerateText: `抱歉，请求失败：${error}`,
+            }
+          }
+          return newMessages
+        })
+        setLoading(false)
+        message.error(error)
       }
-      setMessages((prev) => {
-        const newMessages = [...prev]
-        const index = newMessages.findIndex((m) => m.id === tempAiMsgId)
-        if (index !== -1) {
-          newMessages[index] = aiMsg
-        } else {
-          newMessages.push(aiMsg)
-        }
-        return newMessages
-      })
-      message.success(`AI回复成功（耗时 ${duration} 秒）`)
-    } catch (error: any) {
-      console.error('AI请求失败:', error)
-      // 移除临时AI消息
-      setMessages((prev) => prev.filter((m) => m.id !== tempAiMsgId))
-      
-      const errorMsg = error.message || '发送失败'
-      // 如果是超时错误，给出更友好的提示
-      if (errorMsg.includes('timeout') || errorMsg.includes('超时')) {
-        message.error('AI响应超时，请稍后再试或检查网络连接')
-      } else {
-        message.error(errorMsg)
-      }
-      // 保留用户消息，不删除
-    } finally {
-      setLoading(false)
-    }
+    )
   }
 
   // 获取历史会话列表（按日期分组）
@@ -217,7 +287,7 @@ const AIChat = () => {
             <div className="chat-messages">
               {messages.length === 0 ? (
                 <div className="empty-chat">
-                  <RobotOutlined style={{ fontSize: 64, color: '#1890ff', marginBottom: 16 }} />
+                  <RobotOutlined style={{ fontSize: 64, color: '#FF6B00', marginBottom: 16 }} />
                   <p>开始与 AI 助手对话吧！</p>
                 </div>
               ) : (
@@ -232,7 +302,7 @@ const AIChat = () => {
                         <Avatar
                           icon={isUserMessage ? <UserOutlined /> : <RobotOutlined />}
                           style={{
-                            backgroundColor: isUserMessage ? '#52c41a' : '#1890ff',
+                            backgroundColor: isUserMessage ? '#FF9500' : '#FF6B00',
                           }}
                         />
                         <div className="message-content">

@@ -53,8 +53,8 @@
 }
 
 .history-item:hover {
-  background: #e6f7ff;
-  border-left: 3px solid #1890ff;
+  background: #FFF9E6;
+  border-left: 3px solid #FF6B00;
 }
 
 .history-text {
@@ -161,7 +161,7 @@
 }
 
 .user-message .message-text {
-  background: #1890ff;
+  background: linear-gradient(135deg, #FFCC00 0%, #FF9500 100%);
   color: #fff;
 }
 
@@ -198,3 +198,16 @@
   border-radius: 8px;
 }
 
+
+/* AI流式光标动画 */
+.ai-cursor {
+  display: inline-block;
+  animation: blink 1s infinite;
+  color: #FF6B00;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}

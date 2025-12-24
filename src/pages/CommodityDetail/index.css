@@ -467,3 +467,60 @@
   }
 }
 
+
+/* 评分星星样式 - 增强对比度 */
+.xy-detail-page .ant-rate {
+  color: #FFCC00;
+}
+
+.xy-detail-page .ant-rate-star-full .ant-rate-star-second {
+  color: #FFCC00;
+}
+
+.xy-detail-page .ant-rate-star-half .ant-rate-star-first {
+  color: #FFCC00;
+}
+
+.xy-detail-page .ant-rate-star-zero .ant-rate-star-second,
+.xy-detail-page .ant-rate-star-half .ant-rate-star-second {
+  color: #e0e0e0;
+}
+
+/* 可交互的评分星星 */
+.xy-my-rate .ant-rate {
+  font-size: 24px;
+}
+
+.xy-my-rate .ant-rate-star {
+  transition: transform 0.2s;
+}
+
+.xy-my-rate .ant-rate-star:hover {
+  transform: scale(1.2);
+}
+
+.xy-my-rate .ant-rate-star-full .ant-rate-star-second {
+  color: #FF9500;
+}
+
+/* 评论列表中的星星 */
+.xy-review-item .ant-rate {
+  font-size: 14px;
+}
+
+.xy-review-item .ant-rate-star-full .ant-rate-star-second {
+  color: #FFCC00;
+}
+
+/* 属性区域的评分 */
+.xy-attr-value .ant-rate {
+  font-size: 16px;
+}
+
+.xy-attr-value .ant-rate-star-full .ant-rate-star-second {
+  color: #FF9500;
+}
+
+.xy-attr-value .ant-rate-star-zero .ant-rate-star-second {
+  color: #d9d9d9;
+}

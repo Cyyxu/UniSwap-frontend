@@ -59,7 +59,7 @@ export const commodityApi = {
   // 分页获取商品列表
   getList: (params: CommodityQuery) => api.post('/api/commodity/page', params),
   // 获取商品详情
-  getDetail: (id: number) => api.post(`/api/commodity/detail`, { id }),
+  getDetail: (id: number) => api.get(`/api/commodity/detail/${id}`),
   // 创建商品
   add: (data: CommodityAddRequest) => api.post<number>('/api/commodity/create', data),
   // 编辑商品
@@ -69,5 +69,7 @@ export const commodityApi = {
   // 购买商品
   purchase: (data: CommodityPurchaseRequest) => api.post('/api/commodity/buy', data),
   // 获取当前用户的商品列表
-  getMine: (params: CommodityQuery) => api.post('/api/commodity/mine', params),
+  getMine: () => api.get<Commodity[]>('/api/commodity/list'),
+  // 批量发布/上架商品
+  publish: (ids: number[]) => api.post<boolean>('/api/commodity/publish', ids),
 }

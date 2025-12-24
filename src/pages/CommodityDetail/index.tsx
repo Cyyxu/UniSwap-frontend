@@ -15,7 +15,7 @@ import {
   LoadingOutlined
 } from '@ant-design/icons'
 import { commodityApi, Commodity } from '../../api/commodity'
-import { favoritesApi } from '../../api/favorites'
+import { favoriteApi } from '../../api/favorite'
 import { scoreApi } from '../../api/score'
 import { messageApi } from '../../api/message'
 import { useAuthStore } from '../../store/authStore'
@@ -30,7 +30,6 @@ const CommodityDetail = () => {
   const addItem = useCartStore((s) => s.addItem)
   const [commodity, setCommodity] = useState<Commodity | null>(null)
   const [isFavorited, setIsFavorited] = useState(false)
-  const [favoriteId, setFavoriteId] = useState<number | null>(null)
   const [averageScore, setAverageScore] = useState<number>(0)
   const [myScore, setMyScore] = useState<number>(0)
   const [myScoreId, setMyScoreId] = useState<number | null>(null)
@@ -38,13 +37,15 @@ const CommodityDetail = () => {
   const [myComment, setMyComment] = useState<string>('')
   const [chatLoading, setChatLoading] = useState(false)
 
+  const [cartLoading, setCartLoading] = useState(false)
+
   useEffect(() => {
-    if (id) {
+    if (id && !isNaN(Number(id))) {
       loadDetail()
     }
   }, [id])
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!token) {
       message.warning('请先登录')
       navigate('/login')
@@ -52,22 +53,29 @@ const CommodityDetail = () => {
     }
     if (!commodity) return
 
-    addItem(
-      {
-        commodityId: commodity.id,
-        commodityName: commodity.commodityName,
-        commodityAvatar: commodity.commodityAvatar,
-        price: Number(commodity.price) || 0,
-      },
-      1
-    )
-    message.success('已加入购物车')
+    setCartLoading(true)
+    try {
+      await addItem(commodity.id, 1)
+      message.success('已加入购物车')
+    } catch (error: any) {
+      message.error(error?.message || '加入购物车失败')
+    } finally {
+      setCartLoading(false)
+    }
   }
 
   const loadDetail = async () => {
+    if (!id || isNaN(Number(id))) {
+      message.error('商品ID无效')
+      return
+    }
     try {
       const data: any = await commodityApi.getDetail(Number(id))
       setCommodity(data)
+      
+      // 增加浏览量（无需登录）
+      favoriteApi.view(Number(id)).catch(() => {})
+      
       // 商品加载完成后，如果已登录，检查收藏状态和评分
       if (token && data) {
         checkFavoriteStatus(data.id)
@@ -105,19 +113,10 @@ const CommodityDetail = () => {
   const checkFavoriteStatus = async (commodityId: number) => {
     if (!token) return
     try {
-      const res: any = await favoritesApi.getByCommodityId(commodityId)
-      if (res?.records && res.records.length > 0) {
-        const favorite = res.records[0]
-        setIsFavorited(true)
-        setFavoriteId(favorite.id)
-      } else {
-        setIsFavorited(false)
-        setFavoriteId(null)
-      }
+      const res = await favoriteApi.check(commodityId)
+      setIsFavorited(!!res)
     } catch (error) {
-      // 查询失败，默认为未收藏
       setIsFavorited(false)
-      setFavoriteId(null)
     }
   }
 
@@ -225,23 +224,18 @@ const CommodityDetail = () => {
     if (!commodity) return
 
     try {
-      if (isFavorited && favoriteId) {
-        // 取消收藏
-        await favoritesApi.delete(favoriteId)
-        message.success('已取消收藏')
-        setIsFavorited(false)
-        setFavoriteId(null)
-        // 刷新商品详情以更新收藏数
-        loadDetail()
-      } else {
-        // 添加收藏
-        const id: any = await favoritesApi.add({ commodityId: commodity.id })
-        message.success('已添加到收藏')
+      const res = await favoriteApi.toggle(commodity.id)
+      if (res) {
+        // 返回 true 表示已收藏
         setIsFavorited(true)
-        setFavoriteId(Number(id) || null)
-        // 刷新商品详情以更新收藏数
-        loadDetail()
+        message.success('已添加到收藏')
+      } else {
+        // 返回 false 表示已取消收藏
+        setIsFavorited(false)
+        message.success('已取消收藏')
       }
+      // 刷新商品详情以更新收藏数
+      loadDetail()
     } catch (error: any) {
       message.error(error.message || '操作失败')
     }
@@ -363,6 +357,7 @@ const CommodityDetail = () => {
               className="xy-buy-btn"
               icon={<ShoppingCartOutlined />}
               onClick={handleAddToCart}
+              loading={cartLoading}
               disabled={commodity.commodityInventory === 0}
             >
               加入购物车

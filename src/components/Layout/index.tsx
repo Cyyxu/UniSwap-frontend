@@ -27,7 +27,7 @@ const Layout = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { token, user, setUser, logout } = useAuthStore()
-  const totalCount = useCartStore((s) => s.totalCount)
+  const { totalQuantity, fetchCart } = useCartStore()
 
   useEffect(() => {
     if (token && !user) {
@@ -36,6 +36,13 @@ const Layout = () => {
       })
     }
   }, [token, user, setUser])
+
+  // 登录后加载购物车数据
+  useEffect(() => {
+    if (token) {
+      fetchCart()
+    }
+  }, [token, fetchCart])
 
   const menuItems = [
     { key: '/', icon: <HomeOutlined />, label: '首页' },
@@ -117,7 +124,7 @@ const Layout = () => {
             onClick={() => navigate(token ? '/cart' : '/login')}
             style={{ padding: 0 }}
           >
-            <Badge count={totalCount} size="small" overflowCount={99}>
+            <Badge count={totalQuantity} size="small" overflowCount={99}>
               <ShoppingCartOutlined style={{ fontSize: 20, color: '#333' }} />
             </Badge>
           </Button>

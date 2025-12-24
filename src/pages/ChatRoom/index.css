@@ -46,8 +46,8 @@
 }
 
 .conversation-item.active {
-  background: #f0f0f0;
-  border-left: 3px solid #1890ff;
+  background: #FFF9E6;
+  border-left: 3px solid #FF6B00;
 }
 
 .conversation-title {
@@ -166,7 +166,7 @@
 }
 
 .message-item.sent .message-content {
-  background: #1890ff;
+  background: linear-gradient(135deg, #FFCC00 0%, #FF9500 100%);
   color: #fff;
 }
 

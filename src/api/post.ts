@@ -71,17 +71,20 @@ export const postApi = {
   getList: async (params: PostQuery) => normalizePostResponse(await api.post('/api/post/page', params)),
   // ES 全文检索接口（按关键词/相关度搜索帖子）
   search: async (params: PostQuery) => normalizePostResponse(await api.post('/api/post/search', params)),
-  getDetail: async (id: number) => normalizePostResponse(await api.post('/api/post/detail', { id })),
+  getDetail: async (id: number) => normalizePostResponse(await api.post(`/api/post/detail/${id}`)),
   add: (data: PostAddRequest) => api.post<number>('/api/post/create', data),
   // 后台管理使用manage接口（管理员权限）
   edit: (data: PostEditRequest) => api.post<boolean>('/api/post/manage', data),
   delete: (id: number) => api.post<boolean>('/api/post/remove', { id }),
-  thumb: (postId: number) => api.post<number>('/api/thumb/toggle', { postId }),
-  favour: (postId: number) => api.post<number>('/api/favour/toggle', { postId }),
+  // 点赞/取消点赞帖子
+  thumb: (postId: number) => api.post<boolean>(`/api/postthumb/toggle/${postId}`),
+  // 检查是否已点赞帖子
+  checkThumb: (postId: number) => api.get<boolean>(`/api/postthumb/check/${postId}`),
   // 收藏/取消收藏帖子
-  toggleFavour: (postId: number) => api.post<boolean>(`/api/post/favour/${postId}`),
+  favour: (postId: number) => api.post<boolean>(`/api/postfavour/toggle/${postId}`),
+  toggleFavour: (postId: number) => api.post<boolean>(`/api/postfavour/toggle/${postId}`),
   // 检查是否已收藏帖子
-  checkFavour: (postId: number) => api.get<boolean>(`/api/post/favour/check/${postId}`),
+  checkFavour: (postId: number) => api.get<boolean>(`/api/postfavour/check/${postId}`),
   // 获取我收藏的帖子列表
-  getMyFavourList: async (params: PostQuery) => normalizePostResponse(await api.post('/api/post/favour/mine', params)),
+  getMyFavourList: async (params: PostQuery) => normalizePostResponse(await api.post('/api/postfavour/mine', params)),
 }

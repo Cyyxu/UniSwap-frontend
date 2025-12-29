@@ -28,7 +28,7 @@ const MyComments: React.FC = () => {
   const loadMyComments = async () => {
     setLoading(true)
     try {
-      const res = await api.post('/api/comment/detail')
+      const res = await api.post('/api/commoditycomment/detail')
       setComments(res || [])
     } catch (error: any) {
       message.error(error.message || '加载评论列表失败')
@@ -56,7 +56,7 @@ const MyComments: React.FC = () => {
     }
 
     try {
-      await api.post('/api/comment/edit', {
+      await api.post('/api/commoditycomment/edit', {
         id: editingComment.id,
         content: editContent,
       })
@@ -76,7 +76,7 @@ const MyComments: React.FC = () => {
       cancelText: '取消',
       onOk: async () => {
         try {
-          await api.post('/api/comment/remove', { id: commentId })
+          await api.post('/api/commoditycomment/remove', { id: commentId })
           message.success('删除成功')
           loadMyComments()
         } catch (error: any) {

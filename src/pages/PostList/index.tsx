@@ -86,9 +86,13 @@ const PostList = () => {
                 <p className="post-content">{post.content}</p>
                 <div className="post-footer">
                   <div className="post-tags">
-                    {(post.tagList || post.tags || []).map((tag, index) => (
-                      <Tag key={`${post.id}-${tag}-${index}`} color="blue">{tag}</Tag>
-                    ))}
+                    {(() => {
+                      const tags = post.tagList || post.tags || []
+                      const tagArray = Array.isArray(tags) ? tags : (typeof tags === 'string' ? tags.split(',').filter(Boolean) : [])
+                      return tagArray.map((tag, index) => (
+                        <Tag key={`${post.id}-${tag}-${index}`} color="blue">{tag}</Tag>
+                      ))
+                    })()}
                   </div>
                   <Space>
                     <span><LikeOutlined /> {post.thumbNum}</span>

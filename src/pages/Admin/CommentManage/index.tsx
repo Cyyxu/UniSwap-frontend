@@ -36,7 +36,7 @@ const CommentManage: React.FC = () => {
   const loadComments = async (page: number = 1, postId?: number) => {
     setLoading(true)
     try {
-      const res = await api.post('/api/comment/page', {
+      const res = await api.post('/api/commoditycomment/page', {
         current: page,
         pageSize,
         postId,
@@ -65,7 +65,7 @@ const CommentManage: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      await api.post('/api/comment/remove', { id })
+      await api.post('/api/commoditycomment/remove', { id })
       message.success('删除成功')
       loadComments(current, searchPostId)
     } catch (error: any) {
@@ -78,7 +78,7 @@ const CommentManage: React.FC = () => {
       const values = await form.validateFields()
       
       if (editingComment) {
-        await api.post('/api/comment/manage', {
+        await api.post('/api/commoditycomment/manage', {
           id: editingComment.id,
           ...values,
         })

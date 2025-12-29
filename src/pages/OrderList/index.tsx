@@ -19,10 +19,10 @@ const OrderList = () => {
   const loadData = async () => {
     setLoading(true)
     try {
-      const res = await orderApi.getMyOrders(query)
-      setOrders(res?.data?.records || [])
-      // 确保 total 是数字类型
-      setTotal(Number(res?.data?.total) || 0)
+      const res: any = await orderApi.getMyOrders(query)
+      // API 响应已经被拦截器解包，直接使用 res
+      setOrders(res?.records || [])
+      setTotal(Number(res?.total) || 0)
     } catch (error) {
       console.error('加载订单失败', error)
     } finally {
@@ -76,18 +76,16 @@ const OrderList = () => {
     },
     {
       title: '订单状态',
-      dataIndex: 'status',
-      key: 'status',
+      dataIndex: 'payStatus',
+      key: 'orderStatus',
       width: 100,
       align: 'center',
-      render: (status) => {
-        const statusMap: Record<string, { text: string; color: string }> = {
-          'active': { text: '活跃', color: 'green' },
-          'completed': { text: '已完成', color: 'default' },
-          'cancelled': { text: '已取消', color: 'red' },
+      render: (payStatus) => {
+        // 根据支付状态判断订单状态
+        if (payStatus === 1) {
+          return <Tag color="success">已完成</Tag>
         }
-        const statusInfo = statusMap[status] || { text: '未知', color: 'default' }
-        return <Tag color={statusInfo.color}>{statusInfo.text}</Tag>
+        return <Tag color="warning">待支付</Tag>
       },
     },
   ]

@@ -22,14 +22,8 @@ export interface FavoriteAddRequest {
 }
 
 export const favoritesApi = {
-  getMyList: (params: FavoriteQuery) => api.post('/api/favorite/mine', params),
-  add: (data: FavoriteAddRequest) => api.post<number>('/api/favorite/create', data),
-  delete: (id: number) => api.post<boolean>('/api/favorite/remove', { id }),
-  // 根据商品ID查询当前用户的收藏记录
-  getByCommodityId: (commodityId: number) => api.post('/api/favorite/page', {
-    current: 1,
-    pageSize: 1,
-    commodityId,
-  }),
+  getMyList: (params: FavoriteQuery) => api.post('/api/commodityfavorite/mine', params),
+  add: (data: FavoriteAddRequest) => api.post<number>('/api/commodityfavorite/create', data),
+  delete: (id: number) => api.post<boolean>('/api/commodityfavorite/remove', { id }),
 }
 

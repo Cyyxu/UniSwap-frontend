@@ -34,8 +34,8 @@ const CommodityManage = () => {
         setCommodities(res?.records || [])
       } else {
         // 普通用户：获取自己的商品
-        const res: any = await commodityApi.getMine()
-        setCommodities(res || [])
+        const res: any = await commodityApi.getMine({ current: 1, pageSize: 100 })
+        setCommodities(res?.records || [])
       }
     } catch (error) {
       message.error('加载商品失败')

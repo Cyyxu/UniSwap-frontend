@@ -1,38 +1,68 @@
 import { useEffect, useState } from 'react'
-import { Card, Row, Col, Empty, Button, Modal, message, Pagination } from 'antd'
-import { DeleteOutlined, ShoppingOutlined } from '@ant-design/icons'
+import { Card, Row, Col, Empty, Modal, message, Pagination, Tabs } from 'antd'
+import { DeleteOutlined, ShoppingOutlined, FileTextOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { favoritesApi, Favorite, FavoriteQuery } from '../../api/favorites'
+import { postApi, Post, PostQuery } from '../../api/post'
 import './index.css'
 
 const Favorites = () => {
   const navigate = useNavigate()
-  const [loading, setLoading] = useState(false)
-  const [favorites, setFavorites] = useState<Favorite[]>([])
-  const [total, setTotal] = useState(0)
-  const [query, setQuery] = useState<FavoriteQuery>({
+  const [activeTab, setActiveTab] = useState('commodity')
+
+  // 商品收藏
+  const [commodityLoading, setCommodityLoading] = useState(false)
+  const [commodities, setCommodities] = useState<Favorite[]>([])
+  const [commodityTotal, setCommodityTotal] = useState(0)
+  const [commodityQuery, setCommodityQuery] = useState<FavoriteQuery>({
+    current: 1,
+    pageSize: 12,
+  })
+
+  // 帖子收藏
+  const [postLoading, setPostLoading] = useState(false)
+  const [posts, setPosts] = useState<Post[]>([])
+  const [postTotal, setPostTotal] = useState(0)
+  const [postQuery, setPostQuery] = useState<PostQuery>({
     current: 1,
     pageSize: 12,
   })
 
   useEffect(() => {
-    loadData()
-  }, [query])
+    if (activeTab === 'commodity') {
+      loadCommodities()
+    } else {
+      loadPosts()
+    }
+  }, [activeTab, commodityQuery, postQuery])
 
-  const loadData = async () => {
-    setLoading(true)
+  const loadCommodities = async () => {
+    setCommodityLoading(true)
     try {
-      const res = await favoritesApi.getMyList(query)
-      setFavorites(res?.records || [])
-      setTotal(res?.total || 0)
+      const res: any = await favoritesApi.getMyList(commodityQuery)
+      setCommodities(res?.records || [])
+      setCommodityTotal(res?.total || 0)
     } catch (error) {
-      console.error('加载收藏失败', error)
+      console.error('加载商品收藏失败', error)
     } finally {
-      setLoading(false)
+      setCommodityLoading(false)
     }
   }
 
-  const handleDelete = async (id: number) => {
+  const loadPosts = async () => {
+    setPostLoading(true)
+    try {
+      const res: any = await postApi.getMyFavourList(postQuery)
+      setPosts(res?.records || [])
+      setPostTotal(res?.total || 0)
+    } catch (error) {
+      console.error('加载帖子收藏失败', error)
+    } finally {
+      setPostLoading(false)
+    }
+  }
+
+  const handleDeleteCommodity = async (id: number) => {
     Modal.confirm({
       title: '确认删除',
       content: '确定要取消收藏吗？',
@@ -40,7 +70,7 @@ const Favorites = () => {
         try {
           await favoritesApi.delete(id)
           message.success('取消收藏成功')
-          loadData()
+          loadCommodities()
         } catch (error) {
           message.error('取消收藏失败')
         }
@@ -48,17 +78,34 @@ const Favorites = () => {
     })
   }
 
-  return (
-    <Card title="我的收藏">
-      {favorites.length === 0 ? (
-        <Empty description="暂无收藏" />
+  const handleDeletePost = async (postId: number) => {
+    Modal.confirm({
+      title: '确认删除',
+      content: '确定要取消收藏吗？',
+      onOk: async () => {
+        try {
+          await postApi.toggleFavour(postId)
+          message.success('取消收藏成功')
+          loadPosts()
+        } catch (error) {
+          message.error('取消收藏失败')
+        }
+      },
+    })
+  }
+
+  const renderCommodityList = () => (
+    <>
+      {commodities.length === 0 ? (
+        <Empty description="暂无商品收藏" />
       ) : (
         <>
           <Row gutter={[16, 16]}>
-            {favorites.map((item) => (
+            {commodities.map((item) => (
               <Col xs={12} sm={8} md={6} key={item.id}>
                 <Card
                   hoverable
+                  loading={commodityLoading}
                   cover={
                     <img
                       alt={item.commodityName}
@@ -74,22 +121,15 @@ const Favorites = () => {
                     />,
                     <DeleteOutlined
                       key="delete"
-                      onClick={() => handleDelete(item.id)}
+                      onClick={() => handleDeleteCommodity(item.id)}
                     />,
                   ]}
                 >
                   <Card.Meta
                     title={item.commodityName}
                     description={
-                      <div>
-                        <div style={{ color: '#ff4d4f', fontWeight: 'bold', fontSize: 16 }}>
-                          ¥{item.price}
-                        </div>
-                        {item.remark && (
-                          <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>
-                            {item.remark}
-                          </div>
-                        )}
+                      <div style={{ color: '#ff4d4f', fontWeight: 'bold', fontSize: 16 }}>
+                        ¥{item.price}
                       </div>
                     }
                   />
@@ -99,20 +139,106 @@ const Favorites = () => {
           </Row>
           <div style={{ textAlign: 'center', marginTop: 24 }}>
             <Pagination
-              current={query.current}
-              pageSize={query.pageSize}
-              total={total}
-              onChange={(page, size) => setQuery({ ...query, current: page, pageSize: size })}
+              current={commodityQuery.current}
+              pageSize={commodityQuery.pageSize}
+              total={commodityTotal}
+              onChange={(page, size) =>
+                setCommodityQuery({ ...commodityQuery, current: page, pageSize: size })
+              }
               showSizeChanger
-              showQuickJumper
-              showTotal={(total) => `共 ${total} 件收藏`}
+              showTotal={(total) => `共 ${total} 件商品`}
             />
           </div>
         </>
       )}
+    </>
+  )
+
+  const renderPostList = () => (
+    <>
+      {posts.length === 0 ? (
+        <Empty description="暂无帖子收藏" />
+      ) : (
+        <>
+          <Row gutter={[16, 16]}>
+            {posts.map((item) => (
+              <Col xs={24} sm={12} md={8} key={item.id}>
+                <Card
+                  hoverable
+                  loading={postLoading}
+                  onClick={() => navigate(`/post/${item.id}`)}
+                  actions={[
+                    <FileTextOutlined key="view" />,
+                    <DeleteOutlined
+                      key="delete"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeletePost(item.id)
+                      }}
+                    />,
+                  ]}
+                >
+                  <Card.Meta
+                    title={item.title}
+                    description={
+                      <div>
+                        <div
+                          style={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            color: '#666',
+                          }}
+                        >
+                          {item.content?.replace(/<[^>]+>/g, '').slice(0, 50)}...
+                        </div>
+                        <div style={{ marginTop: 8, color: '#999', fontSize: 12 }}>
+                          👍 {item.thumbNum} · ❤️ {item.favourNum}
+                        </div>
+                      </div>
+                    }
+                  />
+                </Card>
+              </Col>
+            ))}
+          </Row>
+          <div style={{ textAlign: 'center', marginTop: 24 }}>
+            <Pagination
+              current={postQuery.current}
+              pageSize={postQuery.pageSize}
+              total={postTotal}
+              onChange={(page, size) =>
+                setPostQuery({ ...postQuery, current: page, pageSize: size })
+              }
+              showSizeChanger
+              showTotal={(total) => `共 ${total} 篇帖子`}
+            />
+          </div>
+        </>
+      )}
+    </>
+  )
+
+  return (
+    <Card title="我的收藏">
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={[
+          {
+            key: 'commodity',
+            label: '商品收藏',
+            children: renderCommodityList(),
+          },
+          {
+            key: 'post',
+            label: '帖子收藏',
+            children: renderPostList(),
+          },
+        ]}
+      />
     </Card>
   )
 }
 
 export default Favorites
-

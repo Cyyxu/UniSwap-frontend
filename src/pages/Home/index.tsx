@@ -166,9 +166,11 @@ const Home = () => {
   const loadCommodities = async () => {
     try {
       const result: any = await commodityApi.getList({ current: 1, pageSize: 20, isListed: 1 })
+      console.log('[Home] 加载商品结果:', result)
       setCommodities(result?.records || [])
     } catch (error) {
       console.error('加载商品失败', error)
+      setCommodities([])
     }
   }
 

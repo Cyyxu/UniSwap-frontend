@@ -110,14 +110,9 @@ const CommodityDetail = () => {
     }
   }
 
-  const checkFavoriteStatus = async (commodityId: number) => {
-    if (!token) return
-    try {
-      const res = await favoriteApi.check(commodityId)
-      setIsFavorited(!!res)
-    } catch (error) {
-      setIsFavorited(false)
-    }
+  const checkFavoriteStatus = async (_commodityId: number) => {
+    // 后端没有 check 接口，收藏状态通过商品详情返回或 toggle 时更新
+    // 暂时不检查，点击收藏按钮时通过 toggle 切换
   }
 
   const loadScoreData = async (commodityId: number) => {
@@ -204,8 +199,8 @@ const CommodityDetail = () => {
     
     setChatLoading(true)
     try {
-      // 调用接口初始化聊天室，与商家建立联系
-      await messageApi.startChat(commodity.adminId, commodity.id)
+      // 调用接口初始化聊天室，传入商品ID
+      await messageApi.startChat(commodity.id)
       // 跳转到私信页面
       navigate(`/message?recipientId=${commodity.adminId}`)
     } catch (error: any) {
@@ -229,15 +224,19 @@ const CommodityDetail = () => {
         // 返回 true 表示已收藏
         setIsFavorited(true)
         message.success('已添加到收藏')
+        // 更新本地收藏数
+        setCommodity({ ...commodity, favourNum: (commodity.favourNum || 0) + 1 })
       } else {
         // 返回 false 表示已取消收藏
         setIsFavorited(false)
         message.success('已取消收藏')
+        // 更新本地收藏数
+        setCommodity({ ...commodity, favourNum: Math.max((commodity.favourNum || 0) - 1, 0) })
       }
-      // 刷新商品详情以更新收藏数
-      loadDetail()
     } catch (error: any) {
-      message.error(error.message || '操作失败')
+      if (!error.handled) {
+        message.error(error.message || '操作失败')
+      }
     }
   }
 
@@ -354,11 +353,12 @@ const CommodityDetail = () => {
               聊一聊
             </Button>
             <Button
+              type="primary"
               className="xy-buy-btn"
               icon={<ShoppingCartOutlined />}
               onClick={handleAddToCart}
               loading={cartLoading}
-              disabled={commodity.commodityInventory === 0}
+              disabled={commodity.commodityInventory !== undefined && commodity.commodityInventory !== null && commodity.commodityInventory <= 0}
             >
               加入购物车
             </Button>
@@ -366,7 +366,7 @@ const CommodityDetail = () => {
               type="primary"
               className="xy-buy-btn"
               onClick={handlePurchase}
-              disabled={commodity.commodityInventory === 0}
+              disabled={commodity.commodityInventory !== undefined && commodity.commodityInventory !== null && commodity.commodityInventory <= 0}
             >
               立即购买
             </Button>

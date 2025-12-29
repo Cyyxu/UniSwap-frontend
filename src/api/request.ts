@@ -73,13 +73,21 @@ api.interceptors.response.use(
         return res.data !== undefined ? res.data : res
       } else {
         message.error(res.errorMsg || '请求失败')
-        return Promise.reject(new Error(res.errorMsg || '请求失败'))
+        // 创建带标记的错误，避免调用方重复提示
+        const error = new Error(res.errorMsg || '请求失败') as any
+        error.handled = true
+        return Promise.reject(error)
       }
     }
     // 兼容其他格式（如直接返回数据）
     return res
   },
   (error) => {
+    // 如果已经处理过，不再重复提示
+    if (error.handled) {
+      return Promise.reject(error)
+    }
+    
     if (error.response) {
       const { status, data } = error.response
       if (status === 401) {
@@ -101,6 +109,9 @@ api.interceptors.response.use(
       console.error('请求配置错误:', error.message)
       message.error(`请求配置错误: ${error.message}`)
     }
+    
+    // 标记错误已处理
+    error.handled = true
     return Promise.reject(error)
   }
 )

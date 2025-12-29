@@ -12,11 +12,13 @@ const { TextArea } = Input
 
 interface Message {
   id: number
+  tempId?: string  // 临时ID，用于去重
   senderId: number
   recipientId: number
   content: string
   createTime: string
   alreadyRead: number
+  status?: 'pending' | 'sent' | 'failed'  // 消息状态
 }
 
 interface Conversation {
@@ -83,21 +85,43 @@ const ChatRoom = () => {
     websocket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
-        console.log('收到消息:', data)
+        console.log('收到WebSocket消息:', data)
+        
+        // 处理消息确认（ack）
+        if (data.type === 'ack' && data.tempId) {
+          // 收到 ack，更新消息状态为已发送，用真实 msgId 替换 tempId
+          setMessages(prev => prev.map(msg => 
+            msg.tempId === data.tempId 
+              ? { ...msg, id: data.msgId || msg.id, status: 'sent' as const, tempId: undefined }
+              : msg
+          ))
+          return
+        }
         
         if (data.type === 'message') {
+          // 忽略自己发送的消息（避免重复）
+          if (data.senderId === user?.id) {
+            return
+          }
+          
           // 收到新消息，添加到消息列表
           const newMessage: Message = {
-            id: Date.now(),
+            id: data.msgId || Date.now(),
             senderId: data.senderId,
-            recipientId: user.id,
+            recipientId: user!.id,
             content: data.content,
-            createTime: new Date(data.timestamp).toISOString(),
-            alreadyRead: 0
+            createTime: new Date(data.timestamp || Date.now()).toISOString(),
+            alreadyRead: 0,
+            status: 'sent'
           }
           
           if (data.senderId === selectedUserId) {
-            setMessages(prev => [...prev, newMessage])
+            // 检查是否已存在相同消息（通过 msgId 去重）
+            setMessages(prev => {
+              const exists = prev.some(msg => msg.id === newMessage.id)
+              if (exists) return prev
+              return [...prev, newMessage]
+            })
           }
           
           // 刷新会话列表
@@ -182,7 +206,12 @@ const ChatRoom = () => {
   const loadChatHistory = async (otherUserId: number) => {
     try {
       const chatMessages: any = await messageApi.getChatHistory(otherUserId)
-      setMessages(chatMessages || [])
+      // 使用 Map 按 ID 去重，避免刷新后消息重复
+      const messageMap = new Map<number, Message>()
+      ;(chatMessages || []).forEach((msg: Message) => {
+        messageMap.set(msg.id, msg)
+      })
+      setMessages(Array.from(messageMap.values()))
       
       // 滚动到底部
       setTimeout(() => {
@@ -220,7 +249,9 @@ const ChatRoom = () => {
       antMessage.success('消息已删除')
     } catch (error: any) {
       console.error('删除消息失败:', error)
-      antMessage.error(error.response?.data?.message || '删除失败')
+      if (!error.handled) {
+        antMessage.error(error.response?.data?.message || '删除失败')
+      }
     }
   }
 
@@ -239,7 +270,9 @@ const ChatRoom = () => {
       antMessage.success('会话已删除')
     } catch (error: any) {
       console.error('删除会话失败:', error)
-      antMessage.error(error.response?.data?.message || '删除失败')
+      if (!error.handled) {
+        antMessage.error(error.response?.data?.message || '删除失败')
+      }
     }
   }
 
@@ -250,43 +283,62 @@ const ChatRoom = () => {
       return
     }
 
-    try {
-      // 通过HTTP发送消息（保存到数据库）
-      await messageApi.add({
-        recipientId: selectedUserId,
-        content: inputValue.trim()
-      })
+    const messageContent = inputValue.trim()
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    setInputValue('') // 先清空输入框
 
-      // 通过WebSocket发送实时消息（如果连接可用）
+    // 先添加到本地消息列表（pending 状态）
+    const newMessage: Message = {
+      id: Date.now(),
+      tempId,
+      senderId: user!.id,
+      recipientId: selectedUserId,
+      content: messageContent,
+      createTime: new Date().toISOString(),
+      alreadyRead: 0,
+      status: 'pending'
+    }
+    setMessages(prev => [...prev, newMessage])
+
+    // 滚动到底部
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }, 100)
+
+    try {
+      // 只通过 WebSocket 发送消息（后端会保存到数据库并返回 ack）
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
           type: 'chat',
+          tempId,
           recipientId: selectedUserId,
-          content: inputValue.trim()
+          content: messageContent
         }))
       } else {
-        // WebSocket未连接，消息已通过HTTP保存，对方上线后可查看
-        console.log('WebSocket未连接，消息已保存到数据库')
-      }
+        // WebSocket 不可用时，降级使用 HTTP 发送
+        const msgId: any = await messageApi.add({
+          recipientId: selectedUserId,
+          content: messageContent
+        })
 
-      // 添加到本地消息列表
-      const newMessage: Message = {
-        id: Date.now(),
-        senderId: user!.id,
-        recipientId: selectedUserId,
-        content: inputValue.trim(),
-        createTime: new Date().toISOString(),
-        alreadyRead: 0
+        // 更新消息状态为已发送
+        setMessages(prev => prev.map(msg => 
+          msg.tempId === tempId 
+            ? { ...msg, id: msgId || msg.id, status: 'sent' as const }
+            : msg
+        ))
       }
-      setMessages(prev => [...prev, newMessage])
-      setInputValue('')
-      
-      // 滚动到底部
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-      }, 100)
     } catch (error: any) {
-      antMessage.error(error.message || '发送失败')
+      // 发送失败，更新消息状态
+      setMessages(prev => prev.map(msg => 
+        msg.tempId === tempId 
+          ? { ...msg, status: 'failed' as const }
+          : msg
+      ))
+      // 只有未被拦截器处理的错误才显示提示
+      if (!error.handled) {
+        antMessage.error(error.message || '发送失败')
+      }
     }
   }
 

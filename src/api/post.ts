@@ -78,4 +78,10 @@ export const postApi = {
   delete: (id: number) => api.post<boolean>('/api/post/remove', { id }),
   thumb: (postId: number) => api.post<number>('/api/thumb/toggle', { postId }),
   favour: (postId: number) => api.post<number>('/api/favour/toggle', { postId }),
+  // 收藏/取消收藏帖子
+  toggleFavour: (postId: number) => api.post<boolean>(`/api/post/favour/${postId}`),
+  // 检查是否已收藏帖子
+  checkFavour: (postId: number) => api.get<boolean>(`/api/post/favour/check/${postId}`),
+  // 获取我收藏的帖子列表
+  getMyFavourList: async (params: PostQuery) => normalizePostResponse(await api.post('/api/post/favour/mine', params)),
 }

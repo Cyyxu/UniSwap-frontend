@@ -2,9 +2,14 @@ import { useEffect, useState } from 'react'
 import { Card, Row, Col, Empty, Modal, message, Pagination, Tabs } from 'antd'
 import { DeleteOutlined, ShoppingOutlined, FileTextOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
-import { favoritesApi, Favorite, FavoriteQuery } from '../../api/favorites'
+import { favoriteApi } from '../../api/favorite'
 import { postApi, Post, PostQuery } from '../../api/post'
 import './index.css'
+
+interface FavoriteQuery {
+  current?: number
+  pageSize?: number
+}
 
 const Favorites = () => {
   const navigate = useNavigate()
@@ -12,7 +17,7 @@ const Favorites = () => {
 
   // 商品收藏
   const [commodityLoading, setCommodityLoading] = useState(false)
-  const [commodities, setCommodities] = useState<Favorite[]>([])
+  const [commodities, setCommodities] = useState<any[]>([])
   const [commodityTotal, setCommodityTotal] = useState(0)
   const [commodityQuery, setCommodityQuery] = useState<FavoriteQuery>({
     current: 1,
@@ -39,7 +44,7 @@ const Favorites = () => {
   const loadCommodities = async () => {
     setCommodityLoading(true)
     try {
-      const res: any = await favoritesApi.getMyList(commodityQuery)
+      const res: any = await favoriteApi.getMine(commodityQuery)
       setCommodities(res?.records || [])
       setCommodityTotal(res?.total || 0)
     } catch (error) {
@@ -62,13 +67,13 @@ const Favorites = () => {
     }
   }
 
-  const handleDeleteCommodity = async (id: number) => {
+  const handleDeleteCommodity = async (commodityId: number) => {
     Modal.confirm({
       title: '确认删除',
       content: '确定要取消收藏吗？',
       onOk: async () => {
         try {
-          await favoritesApi.delete(id)
+          await favoriteApi.toggle(commodityId)
           message.success('取消收藏成功')
           loadCommodities()
         } catch (error) {
@@ -101,7 +106,7 @@ const Favorites = () => {
       ) : (
         <>
           <Row gutter={[16, 16]}>
-            {commodities.map((item) => (
+            {commodities.map((item: any) => (
               <Col xs={12} sm={8} md={6} key={item.id}>
                 <Card
                   hoverable
@@ -111,13 +116,13 @@ const Favorites = () => {
                       alt={item.commodityName}
                       src={item.commodityAvatar || 'https://via.placeholder.com/200'}
                       style={{ height: 150, objectFit: 'cover' }}
-                      onClick={() => navigate(`/commodity/${item.commodityId}`)}
+                      onClick={() => navigate(`/commodity/${item.id}`)}
                     />
                   }
                   actions={[
                     <ShoppingOutlined
                       key="view"
-                      onClick={() => navigate(`/commodity/${item.commodityId}`)}
+                      onClick={() => navigate(`/commodity/${item.id}`)}
                     />,
                     <DeleteOutlined
                       key="delete"

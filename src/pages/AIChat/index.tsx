@@ -57,14 +57,17 @@ const streamChat = async (
           
           try {
             const parsed = JSON.parse(data)
-            if (parsed.type === 'MESSAGE') {
+            if (parsed && typeof parsed === 'object' && parsed.type === 'MESSAGE') {
               onMessage(parsed.content || '')
-            } else if (parsed.type === 'DONE') {
+            } else if (parsed && typeof parsed === 'object' && parsed.type === 'DONE') {
               onDone(parsed.messageId)
               return
-            } else if (parsed.type === 'ERROR') {
+            } else if (parsed && typeof parsed === 'object' && parsed.type === 'ERROR') {
               onError(parsed.content || '请求失败')
               return
+            } else {
+              // JSON.parse 成功但不是预期的对象格式（如纯数字、字符串）
+              onMessage(String(data))
             }
           } catch {
             // 可能是纯文本消息

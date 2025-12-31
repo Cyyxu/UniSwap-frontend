@@ -13,6 +13,7 @@ import {
   SettingOutlined,
   DashboardOutlined,
   ShoppingCartOutlined,
+  OrderedListOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '../../store/authStore'
 import { useEffect } from 'react'
@@ -54,6 +55,7 @@ const Layout = () => {
   const userMenuItems = [
     { key: 'user', icon: <UserOutlined />, label: '个人中心' },
     { key: 'favorites', icon: <HeartOutlined />, label: '我的收藏' },
+    { key: 'order', icon: <OrderedListOutlined />, label: '我的订单' },
     { key: 'ai-chat', icon: <RobotOutlined />, label: 'AI 助手' },
     { key: 'message', icon: <MessageOutlined />, label: '私信' },
     { key: 'settings', icon: <SettingOutlined />, label: '系统设置' },

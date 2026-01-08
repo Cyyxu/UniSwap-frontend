@@ -14,6 +14,7 @@ import {
   DashboardOutlined,
   ShoppingCartOutlined,
   OrderedListOutlined,
+  ExperimentOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '../../store/authStore'
 import { useEffect } from 'react'
@@ -59,6 +60,7 @@ const Layout = () => {
     { key: 'ai-chat', icon: <RobotOutlined />, label: 'AI 助手' },
     { key: 'message', icon: <MessageOutlined />, label: '私信' },
     { key: 'settings', icon: <SettingOutlined />, label: '系统设置' },
+    { key: 'register-test', icon: <ExperimentOutlined />, label: '注册测试' },
     ...(user?.userRole === 'admin' ? [{ type: 'divider' as const }, { key: 'admin', icon: <DashboardOutlined />, label: '后台管理' }] : []),
     { type: 'divider' as const },
     { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', danger: true },

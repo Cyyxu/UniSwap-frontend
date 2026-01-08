@@ -36,6 +36,7 @@ const MyFavourites = lazy(() => import('./pages/MyFavourites'))
 const MyComments = lazy(() => import('./pages/MyComments'))
 const MyCommodities = lazy(() => import('./pages/MyCommodities'))
 const UserFavourites = lazy(() => import('./pages/UserFavourites'))
+const RegisterTest = lazy(() => import('./pages/RegisterTest'))
 
 const PageLoader = () => (
   <div style={{ minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -75,6 +76,7 @@ function App() {
             <Route path="notice" element={<NoticeList />} />
             <Route path="message" element={<PrivateRoute><ChatRoom /></PrivateRoute>} />
             <Route path="settings" element={<PrivateRoute><AdminSettings /></PrivateRoute>} />
+            <Route path="register-test" element={<PrivateRoute><RegisterTest /></PrivateRoute>} />
           </Route>
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
             <Route index element={<Navigate to="/admin/dashboard" replace />} />

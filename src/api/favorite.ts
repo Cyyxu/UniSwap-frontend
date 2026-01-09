@@ -1,9 +1,6 @@
 import api from './request'
 
 export const favoriteApi = {
-  // 增加浏览量（无需登录）
-  view: (commodityId: number) => api.post(`/api/commodityfavorite/view/${commodityId}`),
-
   // 收藏/取消收藏切换（需要登录）
   toggle: (commodityId: number) => api.post<boolean>(`/api/commodityfavorite/toggle/${commodityId}`),
 
@@ -21,3 +18,4 @@ export const favoriteApi = {
   getMine: (params: { current?: number; pageSize?: number }) =>
     api.post('/api/commodityfavorite/mine', params),
 }
+

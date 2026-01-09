@@ -18,7 +18,9 @@ import {
   VerticalAlignTopOutlined,
   SendOutlined,
   CloseOutlined,
-  ShoppingCartOutlined
+  ShoppingCartOutlined,
+  OrderedListOutlined,
+  ExperimentOutlined
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { commodityApi, Commodity } from '../../api/commodity'
@@ -263,9 +265,11 @@ const Home = () => {
   const userMenuItems = [
     { key: 'user', icon: <UserOutlined />, label: '个人中心' },
     { key: 'favorites', icon: <HeartOutlined />, label: '我的收藏' },
+    { key: 'order', icon: <OrderedListOutlined />, label: '我的订单' },
     { key: 'ai-chat', icon: <RobotOutlined />, label: 'AI 助手' },
     { key: 'message', icon: <MessageOutlined />, label: '私信' },
     { key: 'settings', icon: <SettingOutlined />, label: '系统设置' },
+    { key: 'register-test', icon: <ExperimentOutlined />, label: '注册测试' },
     ...(user?.userRole === 'admin' ? [{ type: 'divider' as const }, { key: 'admin', icon: <DashboardOutlined />, label: '后台管理' }] : []),
     { type: 'divider' as const },
     { key: 'logout', icon: <LogoutOutlined />, label: '退出登录', danger: true },
@@ -599,7 +603,6 @@ const Home = () => {
                 {msg.role === 'ai' && <Avatar size={24} icon={<RobotOutlined />} style={{ background: '#FF6B00' }} />}
                 <div className="ai-chat-bubble">
                   {msg.content}
-                  {msg.streaming && <span className="ai-cursor">▋</span>}
                 </div>
                 {msg.role === 'user' && <Avatar size={24} icon={<UserOutlined />} />}
               </div>

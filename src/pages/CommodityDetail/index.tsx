@@ -73,9 +73,6 @@ const CommodityDetail = () => {
       const data: any = await commodityApi.getDetail(Number(id))
       setCommodity(data)
       
-      // 增加浏览量（无需登录）
-      favoriteApi.view(Number(id)).catch(() => {})
-      
       // 商品加载完成后，如果已登录，检查收藏状态和评分
       if (token && data) {
         checkFavoriteStatus(data.id)

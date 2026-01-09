@@ -810,19 +810,6 @@
   background: linear-gradient(135deg, #FFD633 0%, #FFA520 100%);
 }
 
-/* AI流式光标动画 */
-.ai-cursor {
-  display: inline-block;
-  animation: blink 1s infinite;
-  color: #FF6B00;
-  margin-left: 2px;
-}
-
-@keyframes blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
-}
-
 /* ========== 响应式设计 ========== */
 @media (max-width: 1024px) {
   .xy-main {

@@ -15,6 +15,8 @@ import {
   Space,
   Divider
 } from 'antd'
+import type { UploadChangeParam } from 'antd/es/upload'
+import type { RcFile, UploadFile } from 'antd/es/upload/interface'
 import { 
   UserOutlined, 
   LockOutlined, 
@@ -22,10 +24,13 @@ import {
   BgColorsOutlined,
   UploadOutlined,
   EyeInvisibleOutlined,
-  EyeTwoTone
+  EyeTwoTone,
+  LoadingOutlined,
+  PlusOutlined
 } from '@ant-design/icons'
 import { useAuthStore } from '../../../store/authStore'
 import { userApi } from '../../../api/user'
+import { fileApi } from '../../../api/file'
 import './index.css'
 
 const { TabPane } = Tabs
@@ -36,6 +41,8 @@ const Settings = () => {
   const [passwordForm] = Form.useForm()
   const [profileForm] = Form.useForm()
   const [loading, setLoading] = useState(false)
+  const [uploadLoading, setUploadLoading] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string>('')
   const [themeSettings, setThemeSettings] = useState({
     theme: 'light',
     primaryColor: '#1890ff',
@@ -46,18 +53,83 @@ const Settings = () => {
   // 当 user 改变时，同步更新表单值
   useEffect(() => {
     if (user) {
+      const currentAvatar = user.userAvatar || ''
+      setAvatarUrl(currentAvatar)
       accountForm.setFieldsValue({
         userName: user.userName,
         userAccount: user.userAccount,
-        userAvatar: user.userAvatar,
+        userAvatar: currentAvatar,
       })
     }
   }, [user, accountForm])
+
+  // 上传前校验
+  const beforeUpload = (file: RcFile) => {
+    const isImage = file.type.startsWith('image/')
+    if (!isImage) {
+      message.error('只能上传图片文件！')
+      return false
+    }
+    const isLt5M = file.size / 1024 / 1024 < 5
+    if (!isLt5M) {
+      message.error('图片大小不能超过 5MB！')
+      return false
+    }
+    return true
+  }
+
+  // 自定义上传逻辑（两步上传）
+  const handleUploadChange = async (info: UploadChangeParam<UploadFile>) => {
+    if (info.file.status === 'uploading') {
+      setUploadLoading(true)
+      return
+    }
+    
+    if (info.file.status === 'done' || info.file.originFileObj) {
+      try {
+        setUploadLoading(true)
+        
+        // 第一步：上传图片到 MinIO，获取 URL
+        const file = info.file.originFileObj as RcFile
+        const imageUrl = await fileApi.upload(file)
+        
+        console.log('头像上传成功，URL:', imageUrl)
+        
+        // 更新表单和预览
+        setAvatarUrl(imageUrl)
+        accountForm.setFieldsValue({ userAvatar: imageUrl })
+        
+        message.success('头像上传成功')
+      } catch (error: any) {
+        console.error('上传失败:', error)
+        if (!error.handled) {
+          message.error(error?.message || '上传失败')
+        }
+      } finally {
+        setUploadLoading(false)
+      }
+    }
+    
+    if (info.file.status === 'error') {
+      setUploadLoading(false)
+      message.error('上传失败')
+    }
+  }
+
+  // 自定义上传请求（阻止 antd 默认上传行为）
+  const customRequest = ({ file, onSuccess }: any) => {
+    // 立即标记为成功，实际上传在 handleUploadChange 中处理
+    setTimeout(() => {
+      onSuccess('ok')
+    }, 0)
+  }
 
   // 账户设置保存
   const handleAccountSave = async (values: any) => {
     try {
       setLoading(true)
+      
+      // 第二步：使用上传后的 URL 更新用户信息
       await userApi.updateMyUser({
         userName: values.userName,
         userAvatar: values.userAvatar,
@@ -74,6 +146,7 @@ const Settings = () => {
           userRole: updatedUser.userRole,
         })
         // 同步更新表单显示
+        setAvatarUrl(updatedUser.userAvatar || '')
         accountForm.setFieldsValue({
           userName: updatedUser.userName,
           userAvatar: updatedUser.userAvatar,
@@ -82,7 +155,9 @@ const Settings = () => {
       
       message.success('账户信息更新成功')
     } catch (error: any) {
-      message.error(error.response?.data?.message || '更新失败')
+      if (!error.handled) {
+        message.error(error.response?.data?.message || '更新失败')
+      }
     } finally {
       setLoading(false)
     }
@@ -132,17 +207,20 @@ const Settings = () => {
       })
       message.success('个人信息更新成功')
     } catch (error: any) {
-      message.error(error.response?.data?.message || '更新失败')
+      if (!error.handled) {
+        message.error(error.response?.data?.message || '更新失败')
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  // 头像上传 - 暂时只支持URL输入
-  const handleAvatarUpload = () => {
-    // TODO: 等待后端实现文件上传接口
-    message.info('头像上传功能暂未开放，请在下方输入头像URL')
-  }
+  const uploadButton = (
+    <div>
+      {uploadLoading ? <LoadingOutlined /> : <PlusOutlined />}
+      <div style={{ marginTop: 8 }}>上传</div>
+    </div>
+  )
 
   // 主题设置保存
   const handleThemeSave = () => {
@@ -174,21 +252,27 @@ const Settings = () => {
               style={{ maxWidth: 600 }}
             >
               <Form.Item label="头像">
-                <Space align="center">
-                  <Avatar size={80} src={user?.userAvatar} icon={<UserOutlined />} />
+                <Space align="start" size="large">
+                  <Avatar size={80} src={avatarUrl || user?.userAvatar} icon={<UserOutlined />} />
                   <Upload
+                    name="avatar"
+                    listType="picture-card"
                     showUploadList={false}
-                    onChange={handleAvatarUpload}
+                    beforeUpload={beforeUpload}
+                    onChange={handleUploadChange}
+                    customRequest={customRequest}
                   >
-                    <Button icon={<UploadOutlined />}>更换头像</Button>
+                    {uploadButton}
                   </Upload>
                 </Space>
+                <div style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
+                  支持 JPG、PNG 格式，文件大小不超过 5MB
+                </div>
               </Form.Item>
 
               <Form.Item
                 label="用户名"
                 name="userName"
-                rules={[{ required: true, message: '请输入用户名' }]}
               >
                 <Input placeholder="请输入用户名" />
               </Form.Item>
@@ -203,8 +287,9 @@ const Settings = () => {
               <Form.Item
                 label="头像URL"
                 name="userAvatar"
+                tooltip="上传图片后自动填充，也可手动输入"
               >
-                <Input placeholder="请输入头像图片链接" />
+                <Input placeholder="请输入头像图片链接或使用上方上传" />
               </Form.Item>
 
               <Form.Item>

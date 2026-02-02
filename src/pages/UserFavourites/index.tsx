@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import { Card, List, message, Empty, Spin, Tag } from 'antd'
+import { Card, List, message, Empty, Spin, Tag, Avatar } from 'antd'
 import { HeartOutlined, LikeOutlined, UserOutlined } from '@ant-design/icons'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../../api/request'
 import { Post } from '../../api/post'
+import { userApi, User } from '../../api/user'
 import './index.css'
 
 const UserFavourites: React.FC = () => {
@@ -13,7 +14,7 @@ const UserFavourites: React.FC = () => {
   const [total, setTotal] = useState(0)
   const [current, setCurrent] = useState(1)
   const [pageSize] = useState(10)
-  const [userName, setUserName] = useState('')
+  const [userInfo, setUserInfo] = useState<User | null>(null)
   const navigate = useNavigate()
 
   const normalizePosts = (records: any[] = []): Post[] =>
@@ -23,6 +24,18 @@ const UserFavourites: React.FC = () => {
     })
 
   const userId = searchParams.get('userId')
+
+  // 加载用户信息
+  const loadUserInfo = async () => {
+    if (!userId) return
+    
+    try {
+      const user = await userApi.getUserById(Number(userId))
+      setUserInfo(user)
+    } catch (error: any) {
+      console.error('加载用户信息失败', error)
+    }
+  }
 
   const loadUserFavourites = async (page: number = 1) => {
     if (!userId) {
@@ -40,19 +53,17 @@ const UserFavourites: React.FC = () => {
       setPosts(normalizePosts(res.data.records))
       setTotal(res.data.total || 0)
       setCurrent(page)
-      
-      // 从第一条帖子获取用户名
-      if (res.data.records && res.data.records.length > 0) {
-        setUserName(res.data.records[0].user?.userName || `用户${userId}`)
-      }
     } catch (error: any) {
-      message.error(error.message || '加载收藏列表失败')
+      if (!error.handled) {
+        message.error(error.message || '加载收藏列表失败')
+      }
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
+    loadUserInfo()
     loadUserFavourites()
   }, [userId])
 
@@ -68,10 +79,16 @@ const UserFavourites: React.FC = () => {
     <div className="user-favourites-container">
       <Card 
         title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <UserOutlined />
-            <span>{userName || '用户'} 的收藏</span>
-            <Tag color="blue">{total} 篇</Tag>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <Avatar 
+              size={40} 
+              src={userInfo?.userAvatar} 
+              icon={<UserOutlined />}
+            />
+            <div>
+              <div style={{ fontWeight: 600 }}>{userInfo?.userName || '用户'} 的收藏</div>
+              <Tag color="blue" style={{ marginTop: 4 }}>{total} 篇</Tag>
+            </div>
           </div>
         }
         bordered={false}

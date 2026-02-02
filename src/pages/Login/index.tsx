@@ -16,10 +16,19 @@ const Login = () => {
     setLoading(true)
     try {
       const res = await userApi.login(values)
-      setToken(res.token)
-      setUser(res.user)
-      message.success('登录成功')
-      navigate('/')
+      console.log('登录响应:', res)
+      
+      // 根据实际后端返回结构：{ user: {...}, accessToken: "..." }
+      const { accessToken, user } = res
+      
+      if (accessToken) {
+        setToken(accessToken)
+        setUser(user)
+        message.success('登录成功')
+        navigate('/', { replace: true })
+      } else {
+        message.error('登录异常：未返回 Token')
+      }
     } catch (error: any) {
       message.error(error.message || '登录失败')
     } finally {

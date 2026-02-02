@@ -2,6 +2,7 @@ import { Suspense, lazy, type ReactNode } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Spin } from 'antd'
 import { useAuthStore } from './store/authStore'
+import { hasAccessToken } from './utils/auth'
 import Layout from './components/Layout'
 import AdminRoute from './components/AdminRoute'
 
@@ -17,6 +18,7 @@ const PostList = lazy(() => import('./pages/PostList'))
 const PostDetail = lazy(() => import('./pages/PostDetail'))
 const PostCreate = lazy(() => import('./pages/PostCreate'))
 const UserCenter = lazy(() => import('./pages/UserCenter'))
+const UserProfile = lazy(() => import('./pages/UserProfile'))
 const AIChat = lazy(() => import('./pages/AIChat'))
 const Favorites = lazy(() => import('./pages/Favorites'))
 const NoticeList = lazy(() => import('./pages/NoticeList'))
@@ -45,8 +47,9 @@ const PageLoader = () => (
 )
 
 function PrivateRoute({ children }: { children: ReactNode }) {
-  const { token } = useAuthStore()
-  return token ? <>{children}</> : <Navigate to="/login" />
+  // 使用内存中的 Token 判断是否登录
+  const isAuthenticated = hasAccessToken()
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />
 }
 
 function App() {
@@ -66,6 +69,7 @@ function App() {
             <Route path="post" element={<PostList />} />
             <Route path="post/:id" element={<PostDetail />} />
             <Route path="post/create" element={<PrivateRoute><PostCreate /></PrivateRoute>} />
+            <Route path="user/:id" element={<UserProfile />} />
             <Route path="user" element={<PrivateRoute><UserCenter /></PrivateRoute>} />
             <Route path="ai-chat" element={<PrivateRoute><AIChat /></PrivateRoute>} />
             <Route path="favorites" element={<PrivateRoute><Favorites /></PrivateRoute>} />

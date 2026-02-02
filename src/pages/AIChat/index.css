@@ -1,18 +1,20 @@
 .ai-chat-container {
   width: 100%;
-  height: calc(100vh - 150px);
+  min-height: calc(100vh - 200px);
   padding: 16px;
 }
 
 .chat-layout {
   display: flex;
   gap: 16px;
-  height: 100%;
+  min-height: 600px;
 }
 
 .chat-history {
   width: 280px;
   flex-shrink: 0;
+  height: fit-content;
+  max-height: calc(100vh - 250px);
 }
 
 .history-card {
@@ -24,10 +26,12 @@
 .history-card .ant-card-body {
   flex: 1;
   overflow: hidden;
+  padding: 0;
 }
 
 .history-list {
   height: 100%;
+  max-height: calc(100vh - 350px);
   overflow-y: auto;
   padding: 8px;
 }
@@ -74,6 +78,8 @@
 .chat-main {
   flex: 1;
   min-width: 0;
+  height: fit-content;
+  max-height: calc(100vh - 250px);
 }
 
 .chat-card {
@@ -83,9 +89,7 @@
 }
 
 .chat-card .ant-card-head {
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  flex-shrink: 0;
   background: #fff;
   border-bottom: 1px solid #f0f0f0;
 }
@@ -95,7 +99,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: 0;
+  padding: 16px;
 }
 
 .chat-messages {
@@ -106,6 +110,7 @@
   border-radius: 8px;
   margin-bottom: 16px;
   min-height: 400px;
+  max-height: calc(100vh - 450px);
 }
 
 .empty-chat {
@@ -199,3 +204,77 @@
 }
 
 
+
+
+/* ========== 美化头像样式 ========== */
+
+/* AI助手头像 - 渐变+发光效果 */
+.ai-avatar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  border: 2px solid #fff;
+  position: relative;
+  animation: aiGlow 2s ease-in-out infinite;
+}
+
+.ai-avatar .anticon {
+  font-size: 20px;
+  color: #fff;
+}
+
+/* AI头像发光动画 */
+@keyframes aiGlow {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.6), 0 0 30px rgba(118, 75, 162, 0.3);
+  }
+}
+
+/* 用户头像 - 闲鱼黄渐变 */
+.user-avatar {
+  background: linear-gradient(135deg, #FFDA44 0%, #FF9500 100%) !important;
+  box-shadow: 0 4px 12px rgba(255, 218, 68, 0.3);
+  border: 2px solid #fff;
+}
+
+.user-avatar .anticon {
+  font-size: 20px;
+  color: #333;
+}
+
+/* 空状态的AI图标 */
+.empty-chat .anticon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: aiGlow 2s ease-in-out infinite;
+}
+
+/* 消息气泡优化 */
+.ai-message .message-text {
+  background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+  border: 1px solid #e8ebff;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.08);
+}
+
+.user-message .message-text {
+  background: linear-gradient(135deg, #FFDA44 0%, #FF9500 100%);
+  box-shadow: 0 2px 8px rgba(255, 218, 68, 0.3);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .ai-avatar,
+  .user-avatar {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  
+  .ai-avatar .anticon,
+  .user-avatar .anticon {
+    font-size: 18px;
+  }
+}

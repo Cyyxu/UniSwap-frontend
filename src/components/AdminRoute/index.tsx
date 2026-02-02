@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
+import { hasAccessToken } from '../../utils/auth'
 import { useEffect, useState } from 'react'
 import { Spin } from 'antd'
 import { userApi } from '../../api/user'
@@ -13,13 +14,14 @@ interface AdminRouteProps {
  * 检查用户是否已登录且具有管理员权限
  */
 const AdminRoute = ({ children }: AdminRouteProps) => {
-  const { token, user, setUser } = useAuthStore()
+  const { user, setUser } = useAuthStore()
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     const checkAdmin = async () => {
-      if (!token) {
+      // 使用内存中的 Token 判断
+      if (!hasAccessToken()) {
         setLoading(false)
         return
       }
@@ -46,7 +48,7 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
     }
 
     checkAdmin()
-  }, [token, user, setUser])
+  }, [user, setUser])
 
   if (loading) {
     return (
@@ -56,7 +58,7 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
     )
   }
 
-  if (!token) {
+  if (!hasAccessToken()) {
     return <Navigate to="/login" replace />
   }
 

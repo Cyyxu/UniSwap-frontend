@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Card, Input, Button, List, Avatar, message, Spin } from 'antd'
 import { SendOutlined, RobotOutlined, UserOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { aiApi, AIMessage } from '../../api/ai'
+import { getAccessToken } from '../../utils/auth'
+import api from '../../api/request'
 import dayjs from 'dayjs'
 import './index.css'
 
@@ -15,21 +17,46 @@ const streamChat = async (
   onDone: (messageId?: string) => void,
   onError: (error: string) => void
 ) => {
-  const token = localStorage.getItem('token')
   const baseURL = import.meta.env.PROD 
     ? 'http://120.26.104.183:8109/uniswap' 
     : '/uniswap'
   
   try {
+    // 🔥 关键步骤1：发起流式请求前，先用 axios 发一个轻量级请求
+    // 目的：触发 request.ts 的拦截器，如果 Token 过期会自动刷新
+    // 这样可以确保后续 fetch 拿到的 Token 一定是新鲜的
+    try {
+      await api.post('/api/user/current', {})
+    } catch (error) {
+      // 如果这个请求失败（比如用户未登录），直接抛出错误
+      console.error('[Stream] Token 预检失败:', error)
+      throw new Error('请先登录')
+    }
+    
+    // 🔥 关键步骤2：此时内存中的 Token 一定是最新的
+    // 因为上面的 axios 请求如果遇到 401，会自动刷新并更新内存中的 Token
+    const token = getAccessToken()
+    
+    if (!token) {
+      throw new Error('未获取到有效 Token，请重新登录')
+    }
+    
+    // 🔥 关键步骤3：使用新鲜的 Token 发起流式请求
     const response = await fetch(`${baseURL}/api/llm/stream`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': token ? (token.startsWith('Bearer ') ? token : `Bearer ${token}`) : '',
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({ userInputText }),
+      credentials: 'include', // 确保携带 Cookie（Refresh Token）
     })
 
+    // 🔥 如果还是 401，说明 Refresh Token 也过期了，需要重新登录
+    if (response.status === 401) {
+      throw new Error('登录已过期，请重新登录')
+    }
+    
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
@@ -104,12 +131,21 @@ const AIChat = () => {
       try {
         const res = await aiApi.getMyList({ current: 1, pageSize: 50 })
         const records = res?.records || []
+        
+        // 🔥 辅助函数：安全地解析日期
+        const parseDate = (dateStr: string | null | undefined): Date => {
+          if (!dateStr) return new Date() // 如果没有日期，使用当前时间
+          const date = new Date(dateStr)
+          // 检查日期是否有效
+          return isNaN(date.getTime()) ? new Date() : date
+        }
+        
         // 将旧格式的消息（同时包含用户输入和AI回复）拆分成两条消息
         const separatedMessages: AIMessage[] = []
         records.forEach((msg: AIMessage) => {
           if (msg.userInputText && msg.aiGenerateText) {
             // 拆分成用户消息和AI消息
-            const userMsgTime = new Date(msg.createTime)
+            const userMsgTime = parseDate(msg.createTime)
             const aiMsgTime = new Date(userMsgTime.getTime() + 1000) // AI消息时间稍晚1秒
             
             separatedMessages.push({
@@ -126,10 +162,16 @@ const AIChat = () => {
             })
           } else if (msg.userInputText && !msg.aiGenerateText) {
             // 只有用户输入，是用户消息
-            separatedMessages.push(msg)
+            separatedMessages.push({
+              ...msg,
+              createTime: parseDate(msg.createTime).toISOString(),
+            })
           } else if (msg.aiGenerateText && !msg.userInputText) {
             // 只有AI回复，是AI消息
-            separatedMessages.push(msg)
+            separatedMessages.push({
+              ...msg,
+              createTime: parseDate(msg.createTime).toISOString(),
+            })
           }
         })
         // 按创建时间排序
@@ -225,7 +267,16 @@ const AIChat = () => {
           return newMessages
         })
         setLoading(false)
-        message.error(error)
+        
+        // 🔥 如果是登录过期错误，跳转到登录页
+        if (error.includes('登录') || error.includes('Token')) {
+          message.error('登录已过期，请重新登录')
+          setTimeout(() => {
+            navigate('/login')
+          }, 1500)
+        } else {
+          message.error(error)
+        }
       }
     )
   }
@@ -304,9 +355,8 @@ const AIChat = () => {
                       <div className={`message-item ${isUserMessage ? 'user-message' : 'ai-message'}`}>
                         <Avatar
                           icon={isUserMessage ? <UserOutlined /> : <RobotOutlined />}
-                          style={{
-                            backgroundColor: isUserMessage ? '#FF9500' : '#FF6B00',
-                          }}
+                          size={40}
+                          className={isUserMessage ? 'user-avatar' : 'ai-avatar'}
                         />
                         <div className="message-content">
                           <div className="message-text">

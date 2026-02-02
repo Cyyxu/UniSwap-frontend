@@ -1,95 +1,5 @@
-import axios from 'axios'
-import { message } from 'antd'
-import { useAuthStore } from '../store/authStore'
-
-// AI请求专用axios实例，SparkAI可能需要较长时间响应，超时时间设置为120秒
-const aiBaseURL = import.meta.env.PROD 
-  ? 'http://120.26.104.183:8109/uniswap' 
-  : '/uniswap'
-
-const aiApiInstance = axios.create({
-  baseURL: aiBaseURL,
-  timeout: 120000, // 120秒超时（SparkAI WebSocket可能需要较长时间）
-  withCredentials: true,
-})
-
-const formatAuthToken = (token: string) => (token.startsWith('Bearer ') ? token : `Bearer ${token}`)
-
-// 请求拦截器
-aiApiInstance.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = formatAuthToken(token)
-    }
-    
-    // 强制设置 Content-Type，确保不包含 charset
-    if (config.data && !(config.data instanceof FormData)) {
-      const method = config.method?.toLowerCase()
-      if (method === 'post' || method === 'put' || method === 'patch') {
-        if (typeof config.data === 'object') {
-          config.data = JSON.stringify(config.data)
-        }
-        
-        const headers = config.headers as any
-        if (headers) {
-          if (headers['Content-Type']) delete headers['Content-Type']
-          if (headers['content-type']) delete headers['content-type']
-          if (headers['Content-type']) delete headers['Content-type']
-          headers['Content-Type'] = 'application/json'
-        }
-      }
-    }
-    
-    return config
-  },
-  (error) => {
-    return Promise.reject(error)
-  }
-)
-
-// 响应拦截器
-aiApiInstance.interceptors.response.use(
-  (response) => {
-    const res = response.data
-    if (res.errorCode !== undefined) {
-      if (res.errorCode === 0) {
-        return res.data !== undefined ? res.data : res
-      } else {
-        message.error(res.errorMsg || '请求失败')
-        return Promise.reject(new Error(res.errorMsg || '请求失败'))
-      }
-    }
-    return res
-  },
-  (error) => {
-    if (error.response) {
-      const { status, data } = error.response
-      if (status === 401) {
-        message.error('登录已过期，请重新登录')
-        localStorage.removeItem('token')
-        useAuthStore.getState().logout()
-        window.location.href = '/login'
-      } else {
-        const errorMsg = data?.errorMsg || data?.message || `请求失败: ${status}`
-        message.error(errorMsg)
-        console.error('请求错误:', { status, data, url: error.config?.url })
-      }
-    } else if (error.request) {
-      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        console.error('AI请求超时:', error.config?.url)
-        message.error('AI服务响应超时，请稍后再试或检查网络连接')
-      } else {
-        console.error('网络错误:', error.message, error.config?.url)
-        message.error('网络错误，请检查后端服务是否运行 (http://localhost:8109)')
-      }
-    } else {
-      console.error('请求配置错误:', error.message)
-      message.error(`请求配置错误: ${error.message}`)
-    }
-    return Promise.reject(error)
-  }
-)
+// ✅ 复用主请求实例，享受完整的 Token 刷新机制
+import api from './request'
 
 export interface AIMessage {
   id: number
@@ -111,7 +21,19 @@ export interface AIMessageQuery {
 }
 
 export const aiApi = {
-  add: (data: AIMessageAddRequest) => aiApiInstance.post<AIMessage>('/api/llm/chat', data),
-  getMyList: (params: AIMessageQuery) => aiApiInstance.post('/api/llm/history', params),
-  delete: (id: number) => aiApiInstance.post<boolean>('/api/llm/remove', { id }),
+  // 🔥 使用主 api 实例，但为 AI 请求设置更长的超时时间
+  add: (data: AIMessageAddRequest) => 
+    api.post<AIMessage>('/api/llm/chat', data, { 
+      timeout: 120000 // AI 请求需要 120 秒超时
+    }),
+  
+  getMyList: (params: AIMessageQuery) => 
+    api.post('/api/llm/history', params, { 
+      timeout: 120000 
+    }),
+  
+  delete: (id: number) => 
+    api.post<boolean>('/api/llm/remove', { id }, { 
+      timeout: 120000 
+    }),
 }

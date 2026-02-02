@@ -1,0 +1,139 @@
+.user-profile-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.user-profile-loading,
+.user-profile-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 16px;
+}
+
+.user-profile-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.profile-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.back-btn {
+  color: #666;
+}
+
+.profile-info {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 32px;
+  padding: 24px;
+  background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+  border-radius: 12px;
+}
+
+.profile-avatar {
+  border: 3px solid #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.profile-details {
+  flex: 1;
+}
+
+.profile-name {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #333;
+}
+
+.profile-account {
+  font-size: 14px;
+  color: #666;
+  margin: 4px 0;
+}
+
+.profile-role {
+  display: inline-block;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #FFDA44 0%, #FF9500 100%);
+  color: #333;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+.profile-descriptions {
+  margin-bottom: 24px;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding-top: 24px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.profile-actions .ant-btn {
+  border-radius: 20px;
+  padding: 0 32px;
+  height: 44px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.profile-actions .ant-btn-primary {
+  background: linear-gradient(135deg, #FFDA44 0%, #FF9500 100%);
+  border: none;
+  color: #333;
+  box-shadow: 0 2px 8px rgba(255, 218, 68, 0.3);
+}
+
+.profile-actions .ant-btn-primary:hover {
+  background: linear-gradient(135deg, #FFE066 0%, #FFA520 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 218, 68, 0.4);
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .user-profile-container {
+    padding: 16px;
+  }
+
+  .profile-info {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .profile-name {
+    font-size: 24px;
+  }
+
+  .profile-actions {
+    flex-direction: column;
+  }
+
+  .profile-actions .ant-btn {
+    width: 100%;
+  }
+}

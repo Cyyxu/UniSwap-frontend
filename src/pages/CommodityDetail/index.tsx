@@ -36,11 +36,18 @@ const CommodityDetail = () => {
   const [scoreList, setScoreList] = useState<any[]>([])
   const [myComment, setMyComment] = useState<string>('')
   const [chatLoading, setChatLoading] = useState(false)
-
   const [cartLoading, setCartLoading] = useState(false)
+  
+  // 快捷评价标签
+  const quickTags = [
+    '发货快', '成色新', '沟通顺畅', '是正品', '物超所值', 
+    '包装好', '描述相符', '值得购买'
+  ]
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    if (id && !isNaN(Number(id))) {
+    if (id && !isNaN(Number(id)) && !isLoading) {
       loadDetail()
     }
   }, [id])
@@ -58,7 +65,9 @@ const CommodityDetail = () => {
       await addItem(commodity.id, 1)
       message.success('已加入购物车')
     } catch (error: any) {
-      message.error(error?.message || '加入购物车失败')
+      if (!error.handled) {
+        message.error(error?.message || '加入购物车失败')
+      }
     } finally {
       setCartLoading(false)
     }
@@ -69,21 +78,24 @@ const CommodityDetail = () => {
       message.error('商品ID无效')
       return
     }
+    if (isLoading) return // 防止重复请求
+    
+    setIsLoading(true)
     try {
       const data: any = await commodityApi.getDetail(Number(id))
       setCommodity(data)
       
-      // 商品加载完成后，如果已登录，检查收藏状态和评分
-      if (token && data) {
-        checkFavoriteStatus(data.id)
-        loadScoreData(data.id)
-      } else if (data) {
-        // 未登录也加载平均评分和评分列表
-        loadAverageScore(data.id)
-        loadScoreList(data.id)
+      // 商品加载完成后，加载评分数据
+      if (data) {
+        await loadScoreData(data.id)
       }
-    } catch (error) {
-      message.error('加载商品详情失败')
+    } catch (error: any) {
+      // 如果错误已经在拦截器中处理过，不再重复提示
+      if (!error.handled) {
+        message.error(error?.message || '加载商品详情失败')
+      }
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -103,7 +115,9 @@ const CommodityDetail = () => {
       message.success('购买成功')
       navigate('/order')
     } catch (error: any) {
-      message.error(error.message || '购买失败')
+      if (!error.handled) {
+        message.error(error.message || '购买失败')
+      }
     }
   }
 
@@ -113,11 +127,15 @@ const CommodityDetail = () => {
   }
 
   const loadScoreData = async (commodityId: number) => {
-    await Promise.all([
-      loadAverageScore(commodityId),
-      loadMyScore(commodityId),
-      loadScoreList(commodityId)
-    ])
+    try {
+      await Promise.all([
+        loadAverageScore(commodityId),
+        token ? loadMyScore(commodityId) : Promise.resolve(),
+        loadScoreList(commodityId)
+      ])
+    } catch (error) {
+      console.error('加载评分数据失败', error)
+    }
   }
 
   const loadAverageScore = async (commodityId: number) => {
@@ -156,6 +174,22 @@ const CommodityDetail = () => {
     setMyScore(value)
   }
 
+  const handleTagClick = (tag: string) => {
+    if (selectedTags.includes(tag)) {
+      // 取消选中标签
+      const newTags = selectedTags.filter(t => t !== tag)
+      setSelectedTags(newTags)
+      // 重新生成评论文本
+      setMyComment(newTags.join('、'))
+    } else {
+      // 选中标签
+      const newTags = [...selectedTags, tag]
+      setSelectedTags(newTags)
+      // 重新生成评论文本
+      setMyComment(newTags.join('、'))
+    }
+  }
+
   const handleSubmitReview = async () => {
     if (!token) {
       message.warning('请先登录')
@@ -164,7 +198,7 @@ const CommodityDetail = () => {
     }
     if (!commodity) return
     if (myScore === 0) {
-      message.warning('请先选择评分')
+      message.warning('请先给宝贝打个分吧~')
       return
     }
 
@@ -177,12 +211,16 @@ const CommodityDetail = () => {
         // 新增评分
         const id: any = await scoreApi.add({ commodityId: commodity.id, score: myScore, comment: myComment || undefined })
         setMyScoreId(Number(id) || null)
-        message.success('评价成功')
+        message.success('评价发布成功！')
       }
       // 刷新评分数据
       loadScoreData(commodity.id)
+      // 清空选中的标签
+      setSelectedTags([])
     } catch (error: any) {
-      message.error(error.message || '评价失败')
+      if (!error.handled) {
+        message.error(error.message || '评价失败')
+      }
     }
   }
 
@@ -201,7 +239,9 @@ const CommodityDetail = () => {
       // 跳转到私信页面
       navigate(`/message?recipientId=${commodity.adminId}`)
     } catch (error: any) {
-      message.error(error.message || '建立联系失败，请稍后再试')
+      if (!error.handled) {
+        message.error(error.message || '建立联系失败，请稍后再试')
+      }
     } finally {
       setChatLoading(false)
     }
@@ -384,38 +424,66 @@ const CommodityDetail = () => {
         </div>
       </div>
 
-      {/* 评分区域 */}
+      {/* 评分区域 - 闲鱼风格 */}
       <div className="xy-review-section">
         <div className="xy-review-header">
-          <h3>商品评价 ({scoreList.length})</h3>
+          <h3>💬 评价一下宝贝</h3>
+          <span className="xy-review-count">{scoreList.length}条评价</span>
         </div>
         
         {token && (
-          <div className="xy-my-rate">
+          <div className="xy-my-rate-card">
             <div className="xy-rate-row">
-              <span>我的评分：</span>
+              <span className="xy-rate-label">给个评分吧</span>
               <Rate
                 value={myScore}
                 onChange={handleRateChange}
+                className="xy-rate-stars"
               />
-              {myScore > 0 && <span className="xy-rate-text">{myScore} 分</span>}
+              {myScore > 0 && (
+                <span className="xy-rate-text">
+                  {myScore === 5 ? '超赞！' : myScore === 4 ? '很好' : myScore === 3 ? '还行' : myScore === 2 ? '一般' : '需改进'}
+                </span>
+              )}
             </div>
+            
+            {/* 快捷标签 */}
+            <div className="xy-quick-tags">
+              <div className="xy-tags-label">快速评价</div>
+              <div className="xy-tags-list">
+                {quickTags.map(tag => (
+                  <span
+                    key={tag}
+                    className={`xy-tag ${selectedTags.includes(tag) ? 'xy-tag-active' : ''}`}
+                    onClick={() => handleTagClick(tag)}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+            
             <Input.TextArea
               value={myComment}
               onChange={(e) => setMyComment(e.target.value)}
-              placeholder="写下你的评价（可选）"
+              placeholder="宝贝满足你的期待吗？说说它的优点和不足吧..."
               maxLength={500}
               showCount
-              rows={2}
-              style={{ marginTop: 12 }}
+              rows={3}
+              className="xy-comment-input"
             />
-            <div className="xy-review-submit">
+            
+            <div className="xy-review-footer">
+              <div className="xy-upload-tip">
+                📷 晒图能获得更多曝光哦
+              </div>
               <Button 
                 type="primary" 
                 onClick={handleSubmitReview}
                 disabled={myScore === 0}
+                className="xy-submit-btn"
               >
-                {myScoreId ? '更新评价' : '提交评价'}
+                {myScoreId ? '更新评价' : '发布'}
               </Button>
             </div>
           </div>

@@ -13,13 +13,17 @@ export interface RegisterRequest {
 }
 
 export interface LoginResponse {
-  token: string
+  accessToken: string
   user: {
     id: number
     userAccount: string
     userName: string
     userAvatar: string
     userRole: string
+    status: string
+    createdAt: string
+    updatedAt: string
+    editTime: string
   }
 }
 
@@ -63,6 +67,9 @@ export const userApi = {
   getCurrentUser: () => api.post('/api/user/current'),
   getList: (params: UserQuery) => api.post('/api/user/page', params),
   delete: (id: number) => api.post<boolean>('/api/user/remove', { id }),
+  
+  // 根据ID获取用户信息
+  getUserById: (id: number) => api.post<User>(`/api/user/detail/${id}`, {}),
   
   // 用户更新自己的信息
   updateMyUser: (data: UpdateMyUserRequest) => api.post<boolean>('/api/user/profile', data),

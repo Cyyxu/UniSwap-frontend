@@ -42,7 +42,15 @@ const Layout = () => {
   // 登录后加载购物车数据
   useEffect(() => {
     if (token) {
-      fetchCart()
+      // 添加微小延迟，确保 Token 已完全设置到请求拦截器中
+      const timer = setTimeout(() => {
+        console.log('[Layout] 开始加载购物车数据')
+        fetchCart().catch(err => {
+          console.error('[Layout] 购物车加载失败:', err)
+        })
+      }, 100)
+      
+      return () => clearTimeout(timer)
     }
   }, [token, fetchCart])
 
@@ -182,7 +190,12 @@ const Layout = () => {
       {!isHomePage && !isAuthPage && <FloatingDock />}
       {!isHomePage && (
         <Footer style={{ textAlign: 'center', background: '#fff', color: '#999' }}>
-          UniSwap - 智能校园二手交易平台 ©2024
+          <div>UniSwap - 智能校园二手交易平台 ©2024</div>
+          <div style={{ marginTop: 8 }}>
+            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" style={{ color: '#999' }}>
+              湘ICP备2025135383号-1
+            </a>
+          </div>
         </Footer>
       )}
     </AntLayout>

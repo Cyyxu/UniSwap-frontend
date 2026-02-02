@@ -945,3 +945,75 @@
   }
 }
 
+
+
+/* ========== 页脚备案信息 ========== */
+.xy-footer {
+  text-align: center;
+  padding: 32px 24px;
+  background: #fff;
+  color: #999;
+  font-size: 14px;
+  margin-top: 40px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.xy-footer a {
+  color: #999;
+  text-decoration: none;
+  margin-top: 8px;
+  display: block;
+}
+
+.xy-footer a:hover {
+  color: #FF6B00;
+}
+
+
+/* ========== 首页AI聊天框头像美化 ========== */
+
+/* AI助手头像 - 紫色渐变+发光 */
+.home-ai-avatar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  box-shadow: 0 3px 10px rgba(102, 126, 234, 0.4);
+  border: 2px solid #fff;
+  animation: homeAiGlow 2s ease-in-out infinite;
+}
+
+.home-ai-avatar .anticon {
+  font-size: 16px;
+  color: #fff;
+}
+
+@keyframes homeAiGlow {
+  0%, 100% {
+    box-shadow: 0 3px 10px rgba(102, 126, 234, 0.4);
+  }
+  50% {
+    box-shadow: 0 3px 16px rgba(102, 126, 234, 0.6), 0 0 24px rgba(118, 75, 162, 0.3);
+  }
+}
+
+/* 用户头像 - 闲鱼黄渐变 */
+.home-user-avatar {
+  background: linear-gradient(135deg, #FFDA44 0%, #FF9500 100%) !important;
+  box-shadow: 0 3px 10px rgba(255, 218, 68, 0.3);
+  border: 2px solid #fff;
+}
+
+.home-user-avatar .anticon {
+  font-size: 16px;
+  color: #333;
+}
+
+/* AI聊天气泡优化 */
+.ai-chat-message.ai .ai-chat-bubble {
+  background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+  border: 1px solid #e8ebff;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.08);
+}
+
+.ai-chat-message.user .ai-chat-bubble {
+  background: linear-gradient(135deg, #FFDA44 0%, #FF9500 100%);
+  box-shadow: 0 2px 8px rgba(255, 218, 68, 0.3);
+}

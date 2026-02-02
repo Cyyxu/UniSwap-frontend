@@ -28,6 +28,8 @@ import { commodityTypeApi, CommodityType } from '../../api/commodityType'
 import { useAuthStore } from '../../store/authStore'
 import { useCartStore } from '../../store/cartStore'
 import { userApi } from '../../api/user'
+import { getAccessToken } from '../../utils/auth'
+import api from '../../api/request'
 // SSE流式聊天函数
 const streamChat = async (
   userInputText: string,
@@ -35,20 +37,42 @@ const streamChat = async (
   onDone: (messageId?: string) => void,
   onError: (error: string) => void
 ) => {
-  const token = localStorage.getItem('token')
   const baseURL = import.meta.env.PROD 
     ? 'http://120.26.104.183:8109/uniswap' 
     : '/uniswap'
   
   try {
+    // 🔥 关键步骤1：发起流式请求前，先用 axios 发一个轻量级请求
+    // 目的：触发 request.ts 的拦截器，如果 Token 过期会自动刷新
+    try {
+      await api.post('/api/user/current', {})
+    } catch (error) {
+      console.error('[Stream] Token 预检失败:', error)
+      throw new Error('请先登录')
+    }
+    
+    // 🔥 关键步骤2：此时内存中的 Token 一定是最新的
+    const token = getAccessToken()
+    
+    if (!token) {
+      throw new Error('未获取到有效 Token，请重新登录')
+    }
+    
+    // 🔥 关键步骤3：使用新鲜的 Token 发起流式请求
     const response = await fetch(`${baseURL}/api/llm/stream`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': token ? (token.startsWith('Bearer ') ? token : `Bearer ${token}`) : '',
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({ userInputText }),
+      credentials: 'include', // 确保携带 Cookie（Refresh Token）
     })
+
+    // 🔥 如果还是 401，说明 Refresh Token 也过期了
+    if (response.status === 401) {
+      throw new Error('登录已过期，请重新登录')
+    }
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
@@ -589,6 +613,14 @@ const Home = () => {
         )}
       </div>
 
+      {/* 页脚备案信息 */}
+      <div className="xy-footer">
+        <div>UniSwap - 智能校园二手交易平台 ©2024</div>
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
+          湘ICP备2025135383号-1
+        </a>
+      </div>
+
       {/* AI聊天框 */}
       {showAiChat && (
         <div className="ai-chat-box">
@@ -600,11 +632,11 @@ const Home = () => {
           <div className="ai-chat-messages" ref={aiMessagesRef}>
             {aiMessages.map((msg, i) => (
               <div key={i} className={`ai-chat-message ${msg.role}`}>
-                {msg.role === 'ai' && <Avatar size={24} icon={<RobotOutlined />} style={{ background: '#FF6B00' }} />}
+                {msg.role === 'ai' && <Avatar size={32} icon={<RobotOutlined />} className="home-ai-avatar" />}
                 <div className="ai-chat-bubble">
                   {msg.content}
                 </div>
-                {msg.role === 'user' && <Avatar size={24} icon={<UserOutlined />} />}
+                {msg.role === 'user' && <Avatar size={32} icon={<UserOutlined />} className="home-user-avatar" />}
               </div>
             ))}
           </div>

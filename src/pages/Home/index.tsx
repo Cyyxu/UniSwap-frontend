@@ -23,7 +23,7 @@ import {
   ExperimentOutlined
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
-import { commodityApi, Commodity } from '../../api/commodity'
+import { commodityApi, Commodity, CommodityStatus } from '../../api/commodity'
 import { commodityTypeApi, CommodityType } from '../../api/commodityType'
 import { useAuthStore } from '../../store/authStore'
 import { useCartStore } from '../../store/cartStore'
@@ -38,7 +38,7 @@ const streamChat = async (
   onError: (error: string) => void
 ) => {
   const baseURL = import.meta.env.PROD 
-    ? 'http://120.26.104.183:8109/uniswap' 
+    ? '/uniswap'  // 生产环境使用相对路径，通过 Nginx 代理
     : '/uniswap'
   
   try {
@@ -88,33 +88,102 @@ const streamChat = async (
 
     while (true) {
       const { done, value } = await reader.read()
-      if (done) break
+      if (done) {
+        // 流结束时，检查buffer中是否有剩余数据
+        if (buffer.trim()) {
+          console.log('[Stream] 流结束，处理剩余buffer:', buffer.substring(0, 100))
+          // 检查是否包含结束标记
+          if (buffer.includes('{"errorCode"')) {
+            const match = buffer.match(/\{"errorCode"[^}]*\}/);
+            if (match) {
+              try {
+                const endData = JSON.parse(match[0])
+                console.log('[Stream] 在buffer中找到结束标记:', endData)
+                onDone()
+                return
+              } catch (e) {
+                console.error('[Stream] 解析buffer中的结束标记失败:', e)
+              }
+            }
+          }
+        }
+        break
+      }
 
       buffer += decoder.decode(value, { stream: true })
+      
+      // 检查buffer中是否包含结束标记（可能在同一行）
+      if (buffer.includes('{"errorCode"')) {
+        const match = buffer.match(/\{"errorCode"[^}]*\}/);
+        if (match) {
+          try {
+            const endData = JSON.parse(match[0])
+            console.log('[Stream] 在buffer中找到结束标记:', endData)
+            onDone()
+            return
+          } catch (e) {
+            // 继续处理
+          }
+        }
+      }
+      
       const lines = buffer.split('\n')
       buffer = lines.pop() || ''
 
       for (const line of lines) {
+        // 先检查是否是结束标记（不带data:前缀的JSON）
+        if (line.trim().startsWith('{') && line.includes('errorCode')) {
+          try {
+            const parsed = JSON.parse(line.trim())
+            if (parsed && typeof parsed === 'object' && 'errorCode' in parsed) {
+              console.log('[Stream] 收到结束标记（无data前缀）:', parsed)
+              onDone()
+              return
+            }
+          } catch {
+            // 不是有效的JSON，继续处理
+          }
+        }
+        
         if (line.startsWith('data:')) {
           const data = line.slice(5).trim()
           if (!data) continue
           
           try {
             const parsed = JSON.parse(data)
+            
+            // 检查是否是后端的结束标记 {"errorCode":0,...}
+            if (parsed && typeof parsed === 'object' && 'errorCode' in parsed) {
+              console.log('[Stream] 收到结束标记:', parsed)
+              onDone()
+              return
+            }
+            
             if (parsed && typeof parsed === 'object' && parsed.type === 'MESSAGE') {
+              onMessage(parsed.content || '')
+            } else if (parsed && typeof parsed === 'object' && parsed.type === 'token') {
+              // 兼容标准SSE格式
               onMessage(parsed.content || '')
             } else if (parsed && typeof parsed === 'object' && parsed.type === 'DONE') {
               onDone(parsed.messageId)
               return
+            } else if (parsed && typeof parsed === 'object' && parsed.type === 'done') {
+              // 兼容小写
+              onDone(parsed.messageId)
+              return
             } else if (parsed && typeof parsed === 'object' && parsed.type === 'ERROR') {
               onError(parsed.content || '请求失败')
+              return
+            } else if (parsed && typeof parsed === 'object' && parsed.type === 'error') {
+              // 兼容小写
+              onError(parsed.message || parsed.content || '请求失败')
               return
             } else {
               // JSON.parse 成功但不是预期的对象格式（如纯数字、字符串）
               onMessage(String(data))
             }
           } catch {
-            // 可能是纯文本消息
+            // JSON解析失败，说明是纯文本消息
             if (data !== '[DONE]') {
               onMessage(data)
             }
@@ -129,13 +198,13 @@ const streamChat = async (
 }
 import './index.css'
 
-// 分类图标映射
+// 分类图标映射（驼峰命名）
 const categoryIcons: Record<string, string> = {
-  '数码': '📱', '电脑': '💻', '箱包': '👜', '运动': '🏃',
-  '教材': '📚', '考研': '📖', '装备': '🎮', '账号': '🎯',
-  '个护': '💄', '香水': '🌸', '家电': '🏠', '家装': '🛋️',
-  '艺术': '🎨', '手工': '✂️', '零食': '🍪', '特产': '🎁',
-  '户外': '⛺', '健身': '💪', '闲置': '📦', '转让': '🔄',
+  '手机通讯': '📱', '电脑办公': '💻', '数码配件': '🎧', '图书教材': '📚',
+  '文学小说': '📖', '运动户外': '🏃', '健身器材': '💪', '乐器爱好': '🎸',
+  '校园代步': '🚲', '家用电器': '🏠', '宿舍日用': '🛋️', '男装女装': '👔',
+  '鞋靴箱包': '👜', '美妆护肤': '💄', '零食饮品': '🍪', '票务转让': '🎫',
+  '生活服务': '🔧', '游戏设备': '🎮', '考研考证': '📝', '其他闲置': '📦',
 }
 
 const Home = () => {
@@ -185,8 +254,9 @@ const Home = () => {
 
   const loadCategories = async () => {
     try {
-      const list = await commodityTypeApi.getList()
-      setCategories(list)
+      const result = await commodityTypeApi.page({ current: 1, pageSize: 100 })
+      console.log('[Home] 加载分类结果:', result)
+      setCategories(result?.records || [])
     } catch (error) {
       console.error('加载分类失败', error)
     }
@@ -194,7 +264,10 @@ const Home = () => {
 
   const loadCommodities = async () => {
     try {
-      const result: any = await commodityApi.getList({ current: 1, pageSize: 20, isListed: 1 })
+      const result = await commodityApi.page({ 
+        current: 1, 
+        pageSize: 20
+      })
       console.log('[Home] 加载商品结果:', result)
       setCommodities(result?.records || [])
     } catch (error) {
@@ -224,32 +297,32 @@ const Home = () => {
     },
     {
       id: 'clothes',
-      title: '箱包',
+      title: '鞋靴箱包',
       subtitle: '时尚好物低价淘',
       bg: '#FFF5F5',
       textColor: '#333',
       tagBg: '#FF6B6B',
-      typeName: '箱包',
+      typeName: '鞋靴箱包',
       products: [] as Commodity[],
     },
     {
       id: 'digital',
-      title: '数码',
+      title: '数码配件',
       subtitle: '热门装备省心入',
       bg: '#F0F7FF',
       textColor: '#333',
       tagBg: '#4DABF7',
-      typeName: '数码',
+      typeName: '数码配件',
       products: [] as Commodity[],
     },
     {
       id: 'acg',
-      title: '教材',
+      title: '图书教材',
       subtitle: '知识好物随手得',
       bg: '#F0FFF4',
       textColor: '#333',
       tagBg: '#51CF66',
-      typeName: '教材',
+      typeName: '图书教材',
       products: [] as Commodity[],
     },
   ]
@@ -463,7 +536,7 @@ const Home = () => {
                 <span className="xy-bento-subtitle">{bentoSections[2].subtitle}</span>
               </div>
               <div className="xy-bento-products">
-                {(getProductsForSection('数码').length > 0 ? getProductsForSection('数码') : commodities.slice(0, 3)).map((item, i) => (
+                {(getProductsForSection('数码配件').length > 0 ? getProductsForSection('数码配件') : commodities.slice(0, 3)).map((item, i) => (
                   <div key={i} className="xy-bento-product" onClick={(e) => { e.stopPropagation(); navigate(`/commodity/${item.id}`) }}>
                     <img src={item.commodityAvatar} alt="" />
                     <span className="xy-bento-price">¥{Math.floor(Number(item.price))}</span>
@@ -485,7 +558,7 @@ const Home = () => {
                 <span className="xy-bento-subtitle">{bentoSections[3].subtitle}</span>
               </div>
               <div className="xy-bento-products">
-                {(getProductsForSection('教材').length > 0 ? getProductsForSection('教材') : commodities.slice(0, 3)).map((item, i) => (
+                {(getProductsForSection('图书教材').length > 0 ? getProductsForSection('图书教材') : commodities.slice(0, 3)).map((item, i) => (
                   <div key={i} className="xy-bento-product" onClick={(e) => { e.stopPropagation(); navigate(`/commodity/${item.id}`) }}>
                     <img src={item.commodityAvatar} alt="" />
                     <span className="xy-bento-price">¥{Math.floor(Number(item.price))}</span>

@@ -3,113 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { Card, Input, Button, List, Avatar, message, Spin } from 'antd'
 import { SendOutlined, RobotOutlined, UserOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { aiApi, AIMessage } from '../../api/ai'
-import { getAccessToken } from '../../utils/auth'
-import api from '../../api/request'
 import dayjs from 'dayjs'
 import './index.css'
 
 const { TextArea } = Input
-
-// SSE流式聊天函数
-const streamChat = async (
-  userInputText: string,
-  onMessage: (text: string) => void,
-  onDone: (messageId?: string) => void,
-  onError: (error: string) => void
-) => {
-  const baseURL = import.meta.env.PROD 
-    ? 'http://120.26.104.183:8109/uniswap' 
-    : '/uniswap'
-  
-  try {
-    // 🔥 关键步骤1：发起流式请求前，先用 axios 发一个轻量级请求
-    // 目的：触发 request.ts 的拦截器，如果 Token 过期会自动刷新
-    // 这样可以确保后续 fetch 拿到的 Token 一定是新鲜的
-    try {
-      await api.post('/api/user/current', {})
-    } catch (error) {
-      // 如果这个请求失败（比如用户未登录），直接抛出错误
-      console.error('[Stream] Token 预检失败:', error)
-      throw new Error('请先登录')
-    }
-    
-    // 🔥 关键步骤2：此时内存中的 Token 一定是最新的
-    // 因为上面的 axios 请求如果遇到 401，会自动刷新并更新内存中的 Token
-    const token = getAccessToken()
-    
-    if (!token) {
-      throw new Error('未获取到有效 Token，请重新登录')
-    }
-    
-    // 🔥 关键步骤3：使用新鲜的 Token 发起流式请求
-    const response = await fetch(`${baseURL}/api/llm/stream`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ userInputText }),
-      credentials: 'include', // 确保携带 Cookie（Refresh Token）
-    })
-
-    // 🔥 如果还是 401，说明 Refresh Token 也过期了，需要重新登录
-    if (response.status === 401) {
-      throw new Error('登录已过期，请重新登录')
-    }
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const reader = response.body?.getReader()
-    if (!reader) {
-      throw new Error('No reader available')
-    }
-
-    const decoder = new TextDecoder()
-    let buffer = ''
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
-
-      for (const line of lines) {
-        if (line.startsWith('data:')) {
-          const data = line.slice(5).trim()
-          if (!data) continue
-          
-          try {
-            const parsed = JSON.parse(data)
-            if (parsed && typeof parsed === 'object' && parsed.type === 'MESSAGE') {
-              onMessage(parsed.content || '')
-            } else if (parsed && typeof parsed === 'object' && parsed.type === 'DONE') {
-              onDone(parsed.messageId)
-              return
-            } else if (parsed && typeof parsed === 'object' && parsed.type === 'ERROR') {
-              onError(parsed.content || '请求失败')
-              return
-            } else {
-              // JSON.parse 成功但不是预期的对象格式（如纯数字、字符串）
-              onMessage(String(data))
-            }
-          } catch {
-            // 可能是纯文本消息
-            if (data !== '[DONE]') {
-              onMessage(data)
-            }
-          }
-        }
-      }
-    }
-    onDone()
-  } catch (error: any) {
-    onError(error.message || '请求失败')
-  }
-}
 
 const AIChat = () => {
   const navigate = useNavigate()
@@ -118,9 +15,12 @@ const AIChat = () => {
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const scrollToBottom = () => {
+  const scrollToBottom = (smooth = true) => {
     requestAnimationFrame(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      messagesEndRef.current?.scrollIntoView({ 
+        behavior: smooth ? 'smooth' : 'auto',
+        block: 'end'
+      })
     })
   }
 
@@ -180,7 +80,8 @@ const AIChat = () => {
         )
         if (!cancelled) {
           setMessages(separatedMessages)
-          scrollToBottom()
+          // 🔥 加载历史记录后立即滚动到底部（不使用平滑滚动）
+          setTimeout(() => scrollToBottom(false), 100)
         }
       } catch (error) {
         if (!cancelled) {
@@ -231,54 +132,61 @@ const AIChat = () => {
     }
     setMessages((prev) => [...prev, userMsg, tempAiMsg])
 
-    // 使用流式输出
-    streamChat(
-      userMessage,
-      (text) => {
-        // 逐字更新AI消息
-        setMessages((prev) => {
-          const newMessages = [...prev]
-          const index = newMessages.findIndex((m) => m.id === tempAiMsgId)
-          if (index !== -1) {
-            newMessages[index] = {
-              ...newMessages[index],
-              aiGenerateText: newMessages[index].aiGenerateText + text,
+    // 使用 aiApi.stream() 方法（已更新为支持新的后端接口）
+    try {
+      await aiApi.stream(
+        userMessage, // 直接传递字符串，内部会转换为 { userInputText: userMessage }
+        (token) => {
+          // 逐字更新AI消息
+          setMessages((prev) => {
+            const newMessages = [...prev]
+            const index = newMessages.findIndex((m) => m.id === tempAiMsgId)
+            if (index !== -1) {
+              newMessages[index] = {
+                ...newMessages[index],
+                aiGenerateText: newMessages[index].aiGenerateText + token,
+              }
             }
-          }
-          return newMessages
-        })
-      },
-      () => {
-        // 完成
-        setLoading(false)
-        message.success('AI回复完成')
-      },
-      (error) => {
-        // 错误处理
-        setMessages((prev) => {
-          const newMessages = [...prev]
-          const index = newMessages.findIndex((m) => m.id === tempAiMsgId)
-          if (index !== -1) {
-            newMessages[index] = {
-              ...newMessages[index],
-              aiGenerateText: `抱歉，请求失败：${error}`,
+            return newMessages
+          })
+        },
+        (messageId) => {
+          // 完成
+          setLoading(false)
+          message.success('AI回复完成')
+          console.log('消息ID:', messageId)
+        },
+        (error) => {
+          // 错误处理
+          setMessages((prev) => {
+            const newMessages = [...prev]
+            const index = newMessages.findIndex((m) => m.id === tempAiMsgId)
+            if (index !== -1) {
+              newMessages[index] = {
+                ...newMessages[index],
+                aiGenerateText: `抱歉，请求失败：${error}`,
+              }
             }
+            return newMessages
+          })
+          setLoading(false)
+          
+          // 如果是登录过期错误，跳转到登录页
+          if (error.includes('登录') || error.includes('Token') || error.includes('未登录')) {
+            message.error('登录已过期，请重新登录')
+            setTimeout(() => {
+              navigate('/login')
+            }, 1500)
+          } else {
+            message.error(error)
           }
-          return newMessages
-        })
-        setLoading(false)
-        
-        // 🔥 如果是登录过期错误，跳转到登录页
-        if (error.includes('登录') || error.includes('Token')) {
-          message.error('登录已过期，请重新登录')
-          setTimeout(() => {
-            navigate('/login')
-          }, 1500)
-        } else {
-          message.error(error)
         }
-      }
-    )
+      )
+    } catch (error: any) {
+      setLoading(false)
+      console.error('流式请求异常:', error)
+      message.error(error.message || '请求失败')
+    }
   }
 
   // 获取历史会话列表（按日期分组）

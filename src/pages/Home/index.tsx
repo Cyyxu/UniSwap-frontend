@@ -19,6 +19,7 @@ import {
   SendOutlined,
   CloseOutlined,
   ShoppingCartOutlined,
+  ShoppingOutlined,
   OrderedListOutlined,
   ExperimentOutlined
 } from '@ant-design/icons'
@@ -64,6 +65,7 @@ const streamChat = async (
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
+        'Accept': 'text/event-stream', // SSE 协议要求的 Accept header
       },
       body: JSON.stringify({ userInputText }),
       credentials: 'include', // 确保携带 Cookie（Refresh Token）
@@ -152,7 +154,6 @@ const streamChat = async (
           try {
             const parsed = JSON.parse(data)
             
-            // 检查是否是后端的结束标记 {"errorCode":0,...}
             if (parsed && typeof parsed === 'object' && 'errorCode' in parsed) {
               console.log('[Stream] 收到结束标记:', parsed)
               onDone()
@@ -655,6 +656,14 @@ const Home = () => {
           <div className="dock-item dock-ai" onClick={() => setShowAiChat(!showAiChat)}>
             <RobotOutlined className="dock-icon" />
             <span className="dock-label">AI</span>
+          </div>
+        </Tooltip>
+
+        {/* RAG 智能助手 */}
+        <Tooltip title="RAG 智能推荐" placement="left">
+          <div className="dock-item dock-rag" onClick={() => navigate('/rag-chat')}>
+            <ShoppingOutlined className="dock-icon" />
+            <span className="dock-label">推荐</span>
           </div>
         </Tooltip>
 
